@@ -268,48 +268,12 @@ tbody td:last-child{border-radius:0 var(--radius-sm) var(--radius-sm) 0}
 .recarga-litros{font-size:18px;font-weight:800;color:var(--green)}
 
 /* ===== ADMIN USUARIOS ===== */
-.user-item{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:13px 17px;margin-bottom:8px;display:flex;align-items:center;gap:12px;box-shadow:var(--shadow-sm);transition:all .2s}
-.user-item.baja{opacity:.55;background:var(--fuel-bg);border-color:var(--border2)}
-.user-avatar{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:800;color:white;flex-shrink:0;position:relative}
-.user-avatar .baja-badge{position:absolute;bottom:-2px;right:-2px;background:var(--red);color:white;border-radius:50%;width:14px;height:14px;font-size:8px;display:flex;align-items:center;justify-content:center;font-weight:800}
+.user-item{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:13px 17px;margin-bottom:8px;display:flex;align-items:center;gap:12px;box-shadow:var(--shadow-sm)}
+.user-avatar{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:800;color:white;flex-shrink:0}
 .user-info{flex:1}
 .user-name{font-size:14px;font-weight:700;color:var(--text)}
 .user-email{font-size:11px;color:var(--text3)}
 .user-rol-badge{border-radius:20px;padding:3px 10px;font-size:11px;font-weight:700}
-.user-status-badge{border-radius:20px;padding:3px 10px;font-size:11px;font-weight:700;background:var(--green-bg);color:var(--green)}
-.user-status-badge.inactivo{background:var(--red-bg);color:var(--red)}
-.user-actions{display:flex;gap:6px;flex-shrink:0}
-.btn-user-action{padding:5px 10px;border-radius:var(--radius-sm);font-size:11px;font-weight:600;cursor:pointer;border:none;font-family:inherit;transition:all .15s;white-space:nowrap}
-.btn-user-pass{background:var(--blue-bg);color:var(--blue);border:1px solid #90caf9}
-.btn-user-pass:hover{background:#bbdefb}
-.btn-user-baja{background:var(--red-bg);color:var(--red);border:1px solid #ef9a9a}
-.btn-user-baja:hover{background:#ffcdd2}
-.btn-user-alta{background:var(--green-bg);color:var(--green);border:1px solid #a5d6a7}
-.btn-user-alta:hover{background:#c8e6c9}
-/* Botones rango Excel */
-.exp-range-btn{padding:6px 13px;border-radius:20px;font-size:12px;font-weight:600;cursor:pointer;border:1px solid var(--border2);background:var(--surface2);color:var(--text2);font-family:inherit;transition:all .15s}
-.exp-range-btn:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-light)}
-.exp-range-btn.active{background:var(--accent);color:white;border-color:var(--accent);box-shadow:0 2px 8px rgba(230,92,0,.3)}
-/* Tabs admin */
-.admin-tabs{display:flex;gap:0;border-bottom:2px solid var(--border);margin:0 24px 16px}
-.admin-tab{padding:9px 18px;font-size:13px;font-weight:600;cursor:pointer;border:none;background:none;font-family:inherit;color:var(--text3);border-bottom:2px solid transparent;margin-bottom:-2px;transition:all .2s}
-.admin-tab.active{color:var(--accent);border-bottom-color:var(--accent)}
-.admin-tab-panel{display:none}
-.admin-tab-panel.active{display:block}
-/* Modal usuario — tabs internos */
-.modal-tabs{display:flex;gap:0;border-bottom:2px solid var(--border);margin-bottom:18px}
-.modal-tab{padding:8px 16px;font-size:13px;font-weight:600;cursor:pointer;border:none;background:none;font-family:inherit;color:var(--text3);border-bottom:2px solid transparent;margin-bottom:-2px;transition:all .2s}
-.modal-tab.active{color:var(--accent);border-bottom-color:var(--accent)}
-.modal-tab-panel{display:none}
-.modal-tab-panel.active{display:block}
-/* Panel buscar usuario para cambio contraseña */
-.search-user-row{display:flex;gap:8px;margin-bottom:14px}
-.search-user-row input{flex:1;padding:9px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:13px;font-family:inherit;background:var(--surface2)}
-.search-results-list{max-height:200px;overflow-y:auto;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface2);margin-bottom:12px}
-.search-result-item{display:flex;align-items:center;gap:10px;padding:9px 12px;cursor:pointer;transition:background .15s;border-bottom:1px solid var(--border)}
-.search-result-item:last-child{border-bottom:none}
-.search-result-item:hover,.search-result-item.selected{background:var(--accent-light)}
-.search-result-item.selected{font-weight:700}
 
 /* ===== TOAST ===== */
 #toast{position:fixed;bottom:28px;right:28px;z-index:9999;
@@ -489,7 +453,7 @@ tbody tr.seleccionada{background:var(--red-bg)!important;outline:1.5px solid #ef
     <div class="header-right">
       <div id="nivel-badge" class="nivel-badge nivel-ok" onclick="setVista('deposito')" title="Ver depósito">⛽ Depósito: <span id="nivel-pct-hdr">—</span></div>
       <div class="user-badge">👤 <span id="uname"></span> · <span class="rol-badge" id="urol"></span></div>
-      <button class="btn-sm btn-excel" id="btn-excel-hdr" onclick="abrirModalExport()">📤 Excel</button>
+      <button class="btn-sm btn-excel" id="btn-excel-hdr" onclick="exportarExcel()">📤 Excel</button>
       <button class="btn-sm btn-add" onclick="abrirModalRepostaje()">+ Añadir Repostaje</button>
       <button class="btn-sm btn-admin" id="btn-admin-hdr" style="display:none" onclick="setVista('admin')">👑 Admin</button>
       <button class="btn-sm btn-logout" onclick="doLogout()">Salir</button>
@@ -682,35 +646,22 @@ tbody tr.seleccionada{background:var(--red-bg)!important;outline:1.5px solid #ef
   <div class="view" id="view-admin">
     <div style="padding:12px 24px 8px">
       <div style="font-size:16px;font-weight:800;color:var(--text);margin-bottom:4px">👑 Administración</div>
-      <div style="font-size:12px;color:var(--text3)">Gestión de usuarios y vehículos del sistema</div>
+      <div style="font-size:12px;color:var(--text3)">Gestión de usuarios del sistema</div>
     </div>
-    <!-- TABS -->
-    <div class="admin-tabs">
-      <button class="admin-tab active" onclick="switchAdminTab('usuarios')">👷 Usuarios</button>
-      <button class="admin-tab" onclick="switchAdminTab('vehiculos')">🚗 Vehículos</button>
-    </div>
-    <!-- TAB: Usuarios -->
-    <div class="admin-tab-panel active" id="admin-panel-usuarios">
-      <div style="padding:0 24px">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;gap:8px;flex-wrap:wrap">
-          <div style="font-size:13px;font-weight:700;color:var(--text)">Usuarios del sistema</div>
-          <div style="display:flex;gap:6px;flex-wrap:wrap">
-            <button class="btn-save" onclick="abrirModalCambiarContrasena()" style="padding:7px 14px;font-size:12px;background:var(--blue-bg);color:var(--blue);border:1px solid #90caf9;box-shadow:none">🔑 Cambiar contraseña</button>
-            <button class="btn-save" onclick="abrirModalUsuario()" style="padding:7px 14px;font-size:12px">+ Nuevo usuario</button>
-          </div>
-        </div>
-        <div id="admin-usuarios-list"></div>
+    <div style="padding:8px 24px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+        <div style="font-size:13px;font-weight:700;color:var(--text)">👷 Usuarios del sistema</div>
+        <button class="btn-save" onclick="abrirModalUsuario()" style="padding:7px 16px;font-size:12px">+ Nuevo usuario</button>
       </div>
+      <div id="admin-usuarios-list"></div>
     </div>
-    <!-- TAB: Vehículos -->
-    <div class="admin-tab-panel" id="admin-panel-vehiculos">
-      <div style="padding:0 24px 28px">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
-          <div style="font-size:13px;font-weight:700;color:var(--text)">Vehículos registrados</div>
-          <button class="btn-save" onclick="abrirModalVehiculo()" style="padding:7px 16px;font-size:12px">+ Nuevo vehículo</button>
-        </div>
-        <div id="admin-vehiculos-list"></div>
+    <!-- Vehículos -->
+    <div style="padding:8px 24px 28px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+        <div style="font-size:13px;font-weight:700;color:var(--text)">🚗 Vehículos registrados</div>
+        <button class="btn-save" onclick="abrirModalVehiculo()" style="padding:7px 16px;font-size:12px">+ Nuevo vehículo</button>
       </div>
+      <div id="admin-vehiculos-list"></div>
     </div>
   </div>
 </div>
@@ -874,69 +825,16 @@ tbody tr.seleccionada{background:var(--red-bg)!important;outline:1.5px solid #ef
   </div>
 </div>
 
-<!-- MODAL: CAMBIAR CONTRASEÑA (admin) -->
-<div class="modal-overlay" id="modal-cambiar-pass">
-  <div class="modal">
-    <button class="modal-close" onclick="cerrarModal('modal-cambiar-pass')">✕</button>
-    <h2>🔑 Cambiar Contraseña</h2>
-    <div style="font-size:12px;color:var(--text3);margin-bottom:16px">Selecciona el usuario y establece una nueva contraseña. El cambio requiere que el usuario cierre sesión y vuelva a entrar.</div>
-    <!-- Buscador de usuario -->
-    <div class="field" style="margin-bottom:12px">
-      <label>Buscar usuario</label>
-      <div class="search-user-row">
-        <input type="text" id="cp-search" placeholder="Nombre o email..." oninput="filtrarUsuariosCP()"/>
-      </div>
-      <div class="search-results-list" id="cp-user-list"></div>
-    </div>
-    <!-- Usuario seleccionado -->
-    <div id="cp-selected-info" style="display:none;background:var(--accent-light);border:1px solid #ffcc80;border-radius:var(--radius-sm);padding:10px 14px;margin-bottom:14px;font-size:13px;font-weight:600;color:var(--text)"></div>
-    <!-- Nueva contraseña -->
-    <div class="grid2">
-      <div class="field">
-        <label>Nueva contraseña</label>
-        <input type="password" id="cp-pass1" placeholder="Mínimo 6 caracteres"/>
-      </div>
-      <div class="field">
-        <label>Repetir contraseña</label>
-        <input type="password" id="cp-pass2" placeholder="Repite la contraseña"/>
-      </div>
-    </div>
-    <div id="modal-cp-error" class="error-msg"></div>
-    <div class="modal-footer">
-      <button class="btn-cancel" onclick="cerrarModal('modal-cambiar-pass')">Cancelar</button>
-      <button class="btn-save" onclick="ejecutarCambioContrasena()">🔑 Cambiar contraseña</button>
-    </div>
-  </div>
-</div>
-
-<!-- MODAL: CONFIRMAR BAJA / REACTIVAR USUARIO -->
-<div class="modal-overlay" id="modal-baja-usuario">
-  <div class="modal" style="max-width:420px">
-    <button class="modal-close" onclick="cerrarModal('modal-baja-usuario')">✕</button>
-    <h2 id="modal-baja-titulo">⚠️ Dar de baja usuario</h2>
-    <div id="modal-baja-body" style="font-size:13px;color:var(--text2);line-height:1.6;margin-bottom:20px"></div>
-    <div id="modal-baja-error" class="error-msg"></div>
-    <div class="modal-footer">
-      <button class="btn-cancel" onclick="cerrarModal('modal-baja-usuario')">Cancelar</button>
-      <button class="btn-save" id="modal-baja-btn" onclick="confirmarBajaUsuario()">Confirmar</button>
-    </div>
-  </div>
-</div>
-
 <!-- MODAL: VEHÍCULO -->
 <div class="modal-overlay" id="modal-vehiculo">
-  <div class="modal">
+  <div class="modal" style="max-width:420px">
     <button class="modal-close" onclick="cerrarModal('modal-vehiculo')">✕</button>
     <h2 id="modal-vehiculo-titulo">🚗 Nuevo Vehículo</h2>
+    <div class="field" style="margin-bottom:14px">
+      <label>Nombre / Descripción</label>
+      <input type="text" id="v-nombre" placeholder="Ej: Furgoneta Taller, Camión Grande..."/>
+    </div>
     <div class="grid2">
-      <div class="field">
-        <label>Nombre / Descripción</label>
-        <input type="text" id="v-nombre" placeholder="Ej: Furgoneta Taller"/>
-      </div>
-      <div class="field">
-        <label>Matrícula</label>
-        <input type="text" id="v-matricula" placeholder="Ej: 1234-ABC" style="text-transform:uppercase"/>
-      </div>
       <div class="field">
         <label>Tipo</label>
         <select id="v-tipo">
@@ -944,7 +842,7 @@ tbody tr.seleccionada{background:var(--red-bg)!important;outline:1.5px solid #ef
           <option value="furgoneta">🚐 Furgoneta</option>
           <option value="camion">🚛 Camión</option>
           <option value="maquinaria">⚙️ Maquinaria</option>
-          <option value="otro">Otro</option>
+          <option value="otro">🔧 Otro</option>
         </select>
       </div>
       <div class="field">
@@ -957,67 +855,10 @@ tbody tr.seleccionada{background:var(--red-bg)!important;outline:1.5px solid #ef
     <div id="modal-vehiculo-error" class="error-msg"></div>
     <div class="modal-footer">
       <button class="btn-cancel" onclick="cerrarModal('modal-vehiculo')">Cancelar</button>
-      <button class="btn-delete" id="btn-delete-vehiculo" style="display:none" onclick="borrarVehiculo()">🗑 Eliminar</button>
       <button class="btn-save" onclick="guardarVehiculo()">💾 Guardar</button>
     </div>
   </div>
 </div>
-
-
-<!-- MODAL: EXPORTAR EXCEL -->
-<div class="modal-overlay" id="modal-export-excel">
-  <div class="modal" style="max-width:520px">
-    <button class="modal-close" onclick="cerrarModal('modal-export-excel')">&#x2715;</button>
-    <h2>&#x1F4E4; Exportar a Excel</h2>
-    <div style="font-size:12px;color:var(--text3);margin-bottom:18px">Selecciona el rango de fechas y los filtros que quieres aplicar al informe.</div>
-    <div class="field" style="margin-bottom:14px">
-      <label>Tipo de per&#xED;odo</label>
-      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px" id="exp-range-btns">
-        <button class="exp-range-btn active" data-range="mes-actual"    onclick="setExpRange('mes-actual')">Este mes</button>
-        <button class="exp-range-btn"         data-range="mes-anterior"  onclick="setExpRange('mes-anterior')">Mes anterior</button>
-        <button class="exp-range-btn"         data-range="trimestre"     onclick="setExpRange('trimestre')">&#xDA;ltimos 3 meses</button>
-        <button class="exp-range-btn"         data-range="anyo"          onclick="setExpRange('anyo')">Este a&#xF1;o</button>
-        <button class="exp-range-btn"         data-range="personalizado" onclick="setExpRange('personalizado')">Personalizado</button>
-      </div>
-    </div>
-    <div id="exp-custom-dates" style="display:none">
-      <div class="grid2" style="margin-bottom:14px">
-        <div class="field"><label>Fecha desde</label><input type="date" id="exp-desde"/></div>
-        <div class="field"><label>Fecha hasta</label><input type="date" id="exp-hasta"/></div>
-      </div>
-    </div>
-    <div class="field" style="margin-bottom:14px">
-      <label>Trabajador</label>
-      <select id="exp-trabajador" style="width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:13px;font-family:inherit;background:var(--surface2)">
-        <option value="">&#x2014; Todos los trabajadores &#x2014;</option>
-      </select>
-    </div>
-    <div class="field" style="margin-bottom:14px">
-      <label>Veh&#xED;culo</label>
-      <select id="exp-vehiculo" style="width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:13px;font-family:inherit;background:var(--surface2)">
-        <option value="">&#x2014; Todos los veh&#xED;culos &#x2014;</option>
-      </select>
-    </div>
-    <div class="field" style="margin-bottom:18px">
-      <label>Hojas a incluir en el Excel</label>
-      <div style="display:flex;flex-direction:column;gap:7px;margin-top:8px">
-        <label style="display:flex;align-items:center;gap:8px;font-size:13px;font-weight:500;cursor:pointer"><input type="checkbox" id="exp-hoja-detalle"    checked style="width:15px;height:15px;accent-color:var(--accent)"> Detalle de repostajes (fila por fila)</label>
-        <label style="display:flex;align-items:center;gap:8px;font-size:13px;font-weight:500;cursor:pointer"><input type="checkbox" id="exp-hoja-trabajador" checked style="width:15px;height:15px;accent-color:var(--accent)"> Resumen por trabajador</label>
-        <label style="display:flex;align-items:center;gap:8px;font-size:13px;font-weight:500;cursor:pointer"><input type="checkbox" id="exp-hoja-vehiculo"    checked style="width:15px;height:15px;accent-color:var(--accent)"> Resumen por veh&#xED;culo</label>
-        <label style="display:flex;align-items:center;gap:8px;font-size:13px;font-weight:500;cursor:pointer"><input type="checkbox" id="exp-hoja-diario"              style="width:15px;height:15px;accent-color:var(--accent)"> Consumo diario (litros por d&#xED;a)</label>
-      </div>
-    </div>
-    <div id="exp-preview" style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:11px 14px;font-size:13px;margin-bottom:4px;display:flex;align-items:center;gap:10px">
-      <span style="font-size:18px">&#x1F4CA;</span>
-      <span id="exp-preview-txt" style="color:var(--text2);font-weight:500">Calculando...</span>
-    </div>
-    <div class="modal-footer">
-      <button class="btn-cancel" onclick="cerrarModal('modal-export-excel')">Cancelar</button>
-      <button class="btn-save" onclick="ejecutarExportExcel()" style="background:var(--green);box-shadow:0 2px 8px rgba(46,125,50,.3)">&#x1F4E5; Descargar Excel</button>
-    </div>
-  </div>
-</div>
-
 
 <script>
 // ════════════════════════════════════════════════════════
@@ -1130,27 +971,6 @@ auth.onAuthStateChanged(async user=>{
         console.warn('No se pudo leer perfil Firestore:', e);
       }
       currentProfile = profile;
-
-      // ── Bloquear acceso si el usuario está de baja ──
-      if(profile.baja){
-        await auth.signOut();
-        toast("🚫 Tu cuenta ha sido desactivada. Contacta con el administrador.","#c62828",6000);
-        return;
-      }
-
-      // ── Aplicar cambio de contraseña pendiente ──
-      if(profile.passChangeReq && profile.nuevaPassword){
-        try{
-          await user.updatePassword(profile.nuevaPassword);
-          await db.collection('usuarios').doc(user.uid).update({
-            passChangeReq: firebase.firestore.FieldValue.delete(),
-            nuevaPassword: firebase.firestore.FieldValue.delete(),
-            passChangedBy: firebase.firestore.FieldValue.delete(),
-            passChangedAt: firebase.firestore.FieldValue.delete()
-          });
-          toast("🔑 Contraseña actualizada correctamente","#2e7d32",4000);
-        }catch(ePass){ console.warn("No se pudo aplicar cambio de contraseña:", ePass); }
-      }
 
       const loginEl  = document.getElementById('login-screen');
       const setupEl  = document.getElementById('setup-screen');
@@ -1681,7 +1501,7 @@ function poblarSelectVehiculos(){
   let opts = listaFija.map(v=>`<option value="${v.nombre}">${v.icono} ${v.nombre}</option>`).join("");
   if(vehiculosFirebase.length){
     opts += `<optgroup label="— Vehículos registrados —">`;
-    opts += vehiculosFirebase.map(v=>`<option value="${v.nombre}">${iconosTipo[v.tipo]||"🚗"} ${v.nombre}${v.matricula?" ("+v.matricula+")":""}</option>`).join("");
+    opts += vehiculosFirebase.map(v=>`<option value="${v.nombre}">${iconosTipo[v.tipo]||"🚗"} ${v.nombre}</option>`).join("");
     opts += `</optgroup>`;
   }
 
@@ -1853,43 +1673,17 @@ function renderRecargasList(){
 // ════════════════════════════════════════════════════════
 //  ADMIN
 // ════════════════════════════════════════════════════════
-function switchAdminTab(tab){
-  document.querySelectorAll('.admin-tab').forEach((b,i)=>b.classList.toggle('active',['usuarios','vehiculos'][i]===tab));
-  document.querySelectorAll('.admin-tab-panel').forEach(p=>p.classList.remove('active'));
-  document.getElementById('admin-panel-'+tab)?.classList.add('active');
-}
-
 function renderAdminUsuarios(){
   const wrap=document.getElementById("admin-usuarios-list"); if(!wrap) return;
-  const esAdmin = currentProfile?.rol==="admin";
-  if(!usuarios.length){ wrap.innerHTML='<div style="text-align:center;padding:32px;color:var(--text3);font-size:13px">No hay usuarios registrados</div>'; return; }
-
-  // Separar activos / baja
-  const activos = usuarios.filter(u=>!u.baja);
-  const bajas   = usuarios.filter(u=>u.baja);
-  const todos   = [...activos, ...bajas];
-
-  wrap.innerHTML = todos.map(u=>{
+  wrap.innerHTML = usuarios.map(u=>{
     const rolClr = u.rol==="admin"?"background:var(--yellow-bg);color:#f57f17":"background:var(--blue-bg);color:var(--blue)";
-    const esBaja = !!u.baja;
-    const esSelf = u.id === currentUser?.uid;
-    const acciones = esAdmin && !esSelf ? `
-      <div class="user-actions">
-        <button class="btn-user-action btn-user-pass" onclick="abrirCambioPassDirecto('${u.id}')" title="Cambiar contraseña">🔑</button>
-        ${esBaja
-          ? `<button class="btn-user-action btn-user-alta" onclick="pedirAltaUsuario('${u.id}')" title="Reactivar usuario">✅ Alta</button>`
-          : `<button class="btn-user-action btn-user-baja" onclick="pedirBajaUsuario('${u.id}')" title="Dar de baja">🚫 Baja</button>`
-        }
-      </div>` : '';
-
-    return `<div class="user-item${esBaja?' baja':''}">
-      <div class="user-avatar" style="background:${u.color||"#e65c00"}">${(u.nombre||"?")[0].toUpperCase()}${esBaja?'<span class="baja-badge">✕</span>':''}</div>
+    return `<div class="user-item">
+      <div class="user-avatar" style="background:${u.color||"#e65c00"}">${(u.nombre||"?")[0].toUpperCase()}</div>
       <div class="user-info">
-        <div class="user-name">${_esc(u.nombre||"—")}${esSelf?' <span style="font-size:10px;color:var(--text3)">(tú)</span>':''}</div>
-        <div class="user-email">${_esc(u.email||"—")}${esBaja?' · <span style="color:var(--red);font-weight:600">De baja</span>':''}</div>
+        <div class="user-name">${_esc(u.nombre||"—")}</div>
+        <div class="user-email">${_esc(u.email||"—")}</div>
       </div>
       <span class="user-rol-badge" style="${rolClr}">${u.rol==="admin"?"👑 Admin":"👷 Trabajador"}</span>
-      ${acciones}
     </div>`;
   }).join("");
 }
@@ -1897,17 +1691,31 @@ function renderAdminUsuarios(){
 function renderAdminVehiculos(){
   const wrap=document.getElementById("admin-vehiculos-list"); if(!wrap) return;
   const iconos={"vehiculo":"🚗","furgoneta":"🚐","camion":"🚛","maquinaria":"⚙️","otro":"🔧"};
-  if(!vehiculos.length){ wrap.innerHTML=`<div style="color:var(--text3);font-size:12px;font-style:italic;padding:10px 0">Sin vehículos registrados</div>`; return; }
-  wrap.innerHTML = vehiculos.map(v=>`
-    <div class="user-item" style="cursor:pointer" onclick="editarVehiculo('${v.id}')">
-      <div style="font-size:24px">${iconos[v.tipo]||"🔧"}</div>
+  const tiposLabel={"vehiculo":"Turismo","furgoneta":"Furgoneta","camion":"Camión","maquinaria":"Maquinaria","otro":"Otro"};
+  if(!vehiculos.length){
+    wrap.innerHTML=`<div style="text-align:center;padding:32px 16px;color:var(--text3)">
+      <div style="font-size:36px;margin-bottom:8px">🚗</div>
+      <div style="font-size:13px;font-weight:600">Sin vehículos registrados</div>
+      <div style="font-size:12px;margin-top:4px">Pulsa "+ Nuevo vehículo" para añadir el primero</div>
+    </div>`;
+    return;
+  }
+  wrap.innerHTML = vehiculos.map(v=>{
+    const asig = v.asignadoA ? (usuarios.find(u=>u.id===v.asignadoA)?.nombre || v.asignadoA) : null;
+    return `<div class="user-item" style="transition:all .2s">
+      <div style="font-size:28px;flex-shrink:0;width:38px;text-align:center">${iconos[v.tipo]||"🔧"}</div>
       <div class="user-info">
         <div class="user-name">${_esc(v.nombre||"—")}</div>
-        <div class="user-email">Matrícula: ${_esc(v.matricula||"S/M")} · ${v.tipo||"otro"}</div>
+        <div class="user-email">${tiposLabel[v.tipo]||"Vehículo"}${asig?' · <span style="color:var(--accent);font-weight:600">👤 '+_esc(asig)+'</span>':' · <span style="color:var(--text3)">Sin asignar</span>'}</div>
       </div>
-      <span style="background:var(--accent-light);color:var(--accent);border-radius:20px;padding:3px 10px;font-size:11px;font-weight:700">Editar ✏️</span>
-    </div>`).join("");
+      <div class="user-actions">
+        <button class="btn-user-action btn-user-pass" onclick="editarVehiculo('${v.id}')" title="Editar vehículo">✏️ Editar</button>
+        <button class="btn-user-action btn-user-baja" onclick="confirmarBorrarVehiculo('${v.id}')" title="Eliminar vehículo">🗑 Borrar</button>
+      </div>
+    </div>`;
+  }).join("");
 }
+
 
 // ════════════════════════════════════════════════════════
 //  📷 SISTEMA DE FOTO — CONTADOR DEL DEPÓSITO
@@ -2384,175 +2192,12 @@ async function crearUsuario(){
 }
 
 // ════════════════════════════════════════════════════════
-//  GESTIÓN DE USUARIOS — CAMBIO CONTRASEÑA Y BAJA/ALTA
-// ════════════════════════════════════════════════════════
-
-// --- Variable para usuario seleccionado en modal cambio pass ---
-let _cpSelectedUid = null;
-
-// Abre el modal general de cambio de contraseña (sin usuario preseleccionado)
-function abrirModalCambiarContrasena(){
-  if(currentProfile?.rol!=="admin"){ toast("⚠️ Solo administradores","#c62828"); return; }
-  _cpSelectedUid = null;
-  document.getElementById("cp-search").value="";
-  document.getElementById("cp-pass1").value="";
-  document.getElementById("cp-pass2").value="";
-  document.getElementById("cp-selected-info").style.display="none";
-  document.getElementById("modal-cp-error").style.display="none";
-  filtrarUsuariosCP();
-  document.getElementById("modal-cambiar-pass").classList.add("open");
-}
-
-// Abre el modal con usuario ya preseleccionado (desde el botón 🔑 de la fila)
-function abrirCambioPassDirecto(uid){
-  if(currentProfile?.rol!=="admin"){ toast("⚠️ Solo administradores","#c62828"); return; }
-  _cpSelectedUid = null;
-  document.getElementById("cp-search").value="";
-  document.getElementById("cp-pass1").value="";
-  document.getElementById("cp-pass2").value="";
-  document.getElementById("modal-cp-error").style.display="none";
-  filtrarUsuariosCP();
-  document.getElementById("modal-cambiar-pass").classList.add("open");
-  // Seleccionar automáticamente el usuario
-  setTimeout(()=>{ seleccionarUsuarioCP(uid); }, 50);
-}
-
-// Filtra la lista de usuarios según el buscador
-function filtrarUsuariosCP(){
-  const q = (document.getElementById("cp-search")?.value||"").toLowerCase();
-  const lista = usuarios.filter(u=>
-    u.id !== currentUser?.uid &&          // no me muestro a mí mismo
-    !u.baja &&                             // no mostrar usuarios de baja
-    (u.nombre?.toLowerCase().includes(q)||u.email?.toLowerCase().includes(q))
-  );
-  const el = document.getElementById("cp-user-list");
-  if(!el) return;
-  if(!lista.length){
-    el.innerHTML='<div style="padding:12px;color:var(--text3);font-size:12px;text-align:center">No se encontraron usuarios</div>';
-    return;
-  }
-  el.innerHTML = lista.map(u=>`
-    <div class="search-result-item${u.id===_cpSelectedUid?' selected':''}" onclick="seleccionarUsuarioCP('${u.id}')">
-      <div class="user-avatar" style="background:${u.color||"#e65c00"};width:28px;height:28px;font-size:12px">${(u.nombre||"?")[0].toUpperCase()}</div>
-      <div style="flex:1">
-        <div style="font-size:13px;font-weight:600">${_esc(u.nombre||"—")}</div>
-        <div style="font-size:11px;color:var(--text3)">${_esc(u.email||"—")} · ${u.rol==="admin"?"👑 Admin":"👷 Trabajador"}</div>
-      </div>
-    </div>`).join("");
-}
-
-// Selecciona un usuario en el modal de cambio de contraseña
-function seleccionarUsuarioCP(uid){
-  _cpSelectedUid = uid;
-  const u = usuarios.find(x=>x.id===uid);
-  const info = document.getElementById("cp-selected-info");
-  if(u && info){
-    info.style.display="block";
-    info.innerHTML=`✅ Usuario seleccionado: <strong>${_esc(u.nombre)}</strong> &nbsp;<span style="font-size:11px;color:var(--text3)">${_esc(u.email)}</span>`;
-  }
-  // Re-renderizar lista para marcar el seleccionado
-  filtrarUsuariosCP();
-}
-
-// Ejecuta el cambio de contraseña vía Firebase Admin (Cloud Function) o mediante secondary app
-async function ejecutarCambioContrasena(){
-  const err = document.getElementById("modal-cp-error");
-  err.style.display="none";
-  if(!_cpSelectedUid){ err.textContent="Selecciona un usuario primero"; err.style.display="block"; return; }
-  const pass1 = document.getElementById("cp-pass1").value;
-  const pass2 = document.getElementById("cp-pass2").value;
-  if(!pass1||!pass2){ err.textContent="Introduce la nueva contraseña en ambos campos"; err.style.display="block"; return; }
-  if(pass1.length<6){ err.textContent="La contraseña debe tener al menos 6 caracteres"; err.style.display="block"; return; }
-  if(pass1!==pass2){ err.textContent="Las contraseñas no coinciden"; err.style.display="block"; return; }
-
-  const u = usuarios.find(x=>x.id===_cpSelectedUid);
-  try{
-    // Técnica: actualizar contraseña guardando el hash en Firestore para que el usuario
-    // la use en su próximo inicio de sesión. Para cambio real en Firebase Auth se necesita
-    // Firebase Admin SDK (Cloud Function). Aquí usamos el flujo seguro de secondary app:
-    // creamos app secundaria, hacemos signIn con email/pass actual (no disponible), por lo
-    // que guardamos un token temporal cifrado en Firestore y mostramos instrucciones al admin.
-    // ──────────────────────────────────────────────────────────────────────────────────────
-    // IMPLEMENTACIÓN REAL: guardamos la nueva pass en Firestore (campo temporal encriptado)
-    // y el usuario al hacer login la app la aplica automáticamente con updatePassword().
-    // Esta es la solución más segura sin Cloud Functions.
-    await db.collection("usuarios").doc(_cpSelectedUid).update({
-      nuevaPassword: pass1,          // el usuario la aplicará en su siguiente login
-      passChangeReq: true,
-      passChangedBy: currentProfile?.nombre||"Admin",
-      passChangedAt: firebase.firestore.FieldValue.serverTimestamp()
-    });
-    cerrarModal("modal-cambiar-pass");
-    toast(`🔑 Contraseña actualizada para "${u?.nombre||"usuario"}". Se aplicará en su próximo inicio de sesión.`,"#2e7d32",5000);
-  }catch(e){ err.textContent=_firebaseErr(e); err.style.display="block"; }
-}
-
-// --- Variables para modal de baja ---
-let _bajaUsuarioUid = null;
-let _bajaEsAlta     = false;
-
-function pedirBajaUsuario(uid){
-  if(currentProfile?.rol!=="admin"){ toast("⚠️ Solo administradores","#c62828"); return; }
-  const u = usuarios.find(x=>x.id===uid);
-  if(!u) return;
-  _bajaUsuarioUid = uid;
-  _bajaEsAlta     = false;
-  document.getElementById("modal-baja-titulo").textContent="⚠️ Dar de baja usuario";
-  document.getElementById("modal-baja-body").innerHTML=
-    `¿Seguro que quieres dar de baja a <strong>${_esc(u.nombre)}</strong>?<br><br>
-     El usuario quedará <strong>desactivado</strong> y no podrá iniciar sesión. Sus datos y registros se conservan. Puedes reactivarlo en cualquier momento.`;
-  const btn = document.getElementById("modal-baja-btn");
-  btn.textContent="🚫 Dar de baja";
-  btn.style.background="var(--red)";
-  document.getElementById("modal-baja-error").style.display="none";
-  document.getElementById("modal-baja-usuario").classList.add("open");
-}
-
-function pedirAltaUsuario(uid){
-  if(currentProfile?.rol!=="admin"){ toast("⚠️ Solo administradores","#c62828"); return; }
-  const u = usuarios.find(x=>x.id===uid);
-  if(!u) return;
-  _bajaUsuarioUid = uid;
-  _bajaEsAlta     = true;
-  document.getElementById("modal-baja-titulo").textContent="✅ Reactivar usuario";
-  document.getElementById("modal-baja-body").innerHTML=
-    `¿Quieres reactivar a <strong>${_esc(u.nombre)}</strong>?<br><br>
-     El usuario volverá a estar <strong>activo</strong> y podrá iniciar sesión con sus credenciales habituales.`;
-  const btn = document.getElementById("modal-baja-btn");
-  btn.textContent="✅ Reactivar";
-  btn.style.background="var(--green)";
-  document.getElementById("modal-baja-error").style.display="none";
-  document.getElementById("modal-baja-usuario").classList.add("open");
-}
-
-async function confirmarBajaUsuario(){
-  const err = document.getElementById("modal-baja-error");
-  err.style.display="none";
-  if(!_bajaUsuarioUid) return;
-  const u = usuarios.find(x=>x.id===_bajaUsuarioUid);
-  try{
-    if(_bajaEsAlta){
-      await db.collection("usuarios").doc(_bajaUsuarioUid).update({ baja:false, bajaEn:firebase.firestore.FieldValue.delete() });
-      cerrarModal("modal-baja-usuario");
-      toast(`✅ Usuario "${u?.nombre}" reactivado correctamente`,"#2e7d32");
-    } else {
-      await db.collection("usuarios").doc(_bajaUsuarioUid).update({
-        baja:true, bajaEn:firebase.firestore.FieldValue.serverTimestamp(), bajaPor:currentProfile?.nombre||"Admin"
-      });
-      cerrarModal("modal-baja-usuario");
-      toast(`🚫 Usuario "${u?.nombre}" dado de baja correctamente`,"#c62828");
-    }
-  }catch(e){ err.textContent=_firebaseErr(e); err.style.display="block"; }
-}
-
-// ════════════════════════════════════════════════════════
 //  MODAL VEHÍCULO
 // ════════════════════════════════════════════════════════
 function abrirModalVehiculo(){
   editandoVehiculo=null;
   document.getElementById("modal-vehiculo-titulo").textContent="🚗 Nuevo Vehículo";
-  document.getElementById("btn-delete-vehiculo").style.display="none";
-  ["v-nombre","v-matricula"].forEach(id=>document.getElementById(id).value="");
+  document.getElementById("v-nombre").value="";
   document.getElementById("v-tipo").value="vehiculo";
   document.getElementById("v-asignado").value="";
   document.getElementById("modal-vehiculo-error").style.display="none";
@@ -2564,9 +2209,7 @@ function editarVehiculo(id){
   const v=vehiculos.find(x=>x.id===id); if(!v) return;
   editandoVehiculo=id;
   document.getElementById("modal-vehiculo-titulo").textContent="✏️ Editar Vehículo";
-  document.getElementById("btn-delete-vehiculo").style.display="";
   document.getElementById("v-nombre").value=v.nombre||"";
-  document.getElementById("v-matricula").value=v.matricula||"";
   document.getElementById("v-tipo").value=v.tipo||"vehiculo";
   poblarSelectTrabajadores();
   setTimeout(()=>document.getElementById("v-asignado").value=v.asignadoA||"",100);
@@ -2577,26 +2220,50 @@ function editarVehiculo(id){
 async function guardarVehiculo(){
   const err = document.getElementById("modal-vehiculo-error");
   err.style.display="none";
-  const nombre   = document.getElementById("v-nombre").value.trim();
-  const matricula= document.getElementById("v-matricula").value.trim().toUpperCase();
-  const tipo     = document.getElementById("v-tipo").value;
-  const asignadoA= document.getElementById("v-asignado").value;
-  if(!nombre){ err.textContent="Indica el nombre del vehículo"; err.style.display="block"; return; }
-  const data={nombre,matricula,tipo,asignadoA,actualizadoEn:firebase.firestore.FieldValue.serverTimestamp()};
+  const nombre    = document.getElementById("v-nombre").value.trim();
+  const tipo      = document.getElementById("v-tipo").value;
+  const asignadoA = document.getElementById("v-asignado").value;
+  if(!nombre){ err.textContent="Indica el nombre o descripción del vehículo"; err.style.display="block"; return; }
+  const data={nombre,tipo,asignadoA,actualizadoEn:firebase.firestore.FieldValue.serverTimestamp()};
   try{
     if(editandoVehiculo) await db.collection("vehiculos").doc(editandoVehiculo).update(data);
     else{ data.creadoEn=firebase.firestore.FieldValue.serverTimestamp(); await db.collection("vehiculos").add(data); }
     cerrarModal("modal-vehiculo");
-    toast("🚗 Vehículo guardado","#2e7d32");
+    toast(editandoVehiculo?"✏️ Vehículo actualizado":"🚗 Vehículo añadido correctamente","#2e7d32");
   }catch(e){ err.textContent="Error: "+e.message; err.style.display="block"; }
 }
 
+function confirmarBorrarVehiculo(id){
+  const v=vehiculos.find(x=>x.id===id); if(!v) return;
+  // Reutilizamos el modal de baja de usuarios con texto adaptado
+  _bajaUsuarioUid=null; // aseguramos que no hay conflicto
+  const titulo = document.getElementById("modal-baja-titulo");
+  const body   = document.getElementById("modal-baja-body");
+  const btn    = document.getElementById("modal-baja-btn");
+  const errEl  = document.getElementById("modal-baja-error");
+  titulo.textContent="🗑 Eliminar vehículo";
+  body.innerHTML=`¿Seguro que quieres eliminar <strong>${_esc(v.nombre)}</strong>?<br><br>
+    <span style="color:var(--red);font-size:12px">⚠️ Esta acción no se puede deshacer. Los repostajes asociados no se eliminarán.</span>`;
+  btn.textContent="🗑 Eliminar";
+  btn.style.background="var(--red)";
+  btn.onclick = async ()=>{
+    errEl.style.display="none";
+    try{
+      await db.collection("vehiculos").doc(id).delete();
+      cerrarModal("modal-baja-usuario");
+      toast("🗑 Vehículo eliminado","#c62828");
+    }catch(e){ errEl.textContent=_firebaseErr(e); errEl.style.display="block"; }
+  };
+  errEl.style.display="none";
+  document.getElementById("modal-baja-usuario").classList.add("open");
+}
+
+// Alias legacy — no se usa pero dejamos por si acaso
 async function borrarVehiculo(){
   if(!editandoVehiculo) return;
-  if(!confirm("¿Eliminar este vehículo?")) return;
-  try{ await db.collection("vehiculos").doc(editandoVehiculo).delete(); cerrarModal("modal-vehiculo"); toast("🗑 Vehículo eliminado","#c62828"); }
-  catch(e){ toast("Error: "+e.message,"#c62828"); }
+  confirmarBorrarVehiculo(editandoVehiculo);
 }
+
 
 // ════════════════════════════════════════════════════════
 //  CONFIG DEPÓSITO
@@ -2615,230 +2282,31 @@ async function guardarConfigDeposito(){
 }
 
 // ════════════════════════════════════════════════════════
-//  EXPORTAR EXCEL — SISTEMA COMPLETO CON FILTROS
+//  EXPORTAR EXCEL
 // ════════════════════════════════════════════════════════
-
-let _expRange = 'mes-actual';
-
-function abrirModalExport(){
+function exportarExcel(){
   if(!registros.length){ toast("No hay registros para exportar","#f59e0b"); return; }
-
-  // Poblar selectores de trabajador y vehículo
-  const selTrab = document.getElementById('exp-trabajador');
-  const selVeh  = document.getElementById('exp-vehiculo');
-  selTrab.innerHTML = '<option value="">— Todos los trabajadores —</option>' +
-    [...new Set(registros.map(r=>r.trabajadorNombre||'').filter(Boolean))].sort()
-    .map(n=>`<option value="${_esc(n)}">${_esc(n)}</option>`).join('');
-  selVeh.innerHTML  = '<option value="">— Todos los vehículos —</option>' +
-    [...new Set(registros.map(r=>r.vehiculo||'').filter(Boolean))].sort()
-    .map(v=>`<option value="${_esc(v)}">${_esc(v)}</option>`).join('');
-
-  // Aplicar rango por defecto
-  _expRange = 'mes-actual';
-  setExpRange('mes-actual');
-
-  // Listeners para actualizar preview en tiempo real
-  ['exp-trabajador','exp-vehiculo','exp-desde','exp-hasta'].forEach(id=>{
-    const el = document.getElementById(id);
-    if(el){ el.removeEventListener('change', _actualizarPreviewExport); el.addEventListener('change', _actualizarPreviewExport); }
-  });
-
-  document.getElementById('modal-export-excel').classList.add('open');
-  _actualizarPreviewExport();
-}
-
-function setExpRange(range){
-  _expRange = range;
-  document.querySelectorAll('.exp-range-btn').forEach(b=>b.classList.toggle('active', b.dataset.range===range));
-  const customDiv = document.getElementById('exp-custom-dates');
-  customDiv.style.display = range==='personalizado' ? '' : 'none';
-
-  // Auto-rellenar fechas según el rango seleccionado
-  const hoy   = new Date();
-  const y     = hoy.getFullYear();
-  const m     = hoy.getMonth();
-  let desde, hasta;
-
-  if(range==='mes-actual'){
-    desde = new Date(y, m, 1);
-    hasta = new Date(y, m+1, 0);
-  } else if(range==='mes-anterior'){
-    desde = new Date(y, m-1, 1);
-    hasta = new Date(y, m, 0);
-  } else if(range==='trimestre'){
-    desde = new Date(y, m-2, 1);
-    hasta = new Date(y, m+1, 0);
-  } else if(range==='anyo'){
-    desde = new Date(y, 0, 1);
-    hasta = new Date(y, 11, 31);
-  } else {
-    // personalizado: no tocar los inputs
-    _actualizarPreviewExport();
-    return;
-  }
-  // Rellenar los inputs de fecha aunque estén ocultos (para usar los valores internamente)
-  const toISO = d => d.toISOString().substring(0,10);
-  document.getElementById('exp-desde').value = toISO(desde);
-  document.getElementById('exp-hasta').value = toISO(hasta);
-  _actualizarPreviewExport();
-}
-
-function _getExpFiltrados(){
-  const desde   = document.getElementById('exp-desde').value;
-  const hasta   = document.getElementById('exp-hasta').value;
-  const trab    = document.getElementById('exp-trabajador').value;
-  const veh     = document.getElementById('exp-vehiculo').value;
-
-  const dDesde  = desde ? new Date(desde+'T00:00:00') : null;
-  const dHasta  = hasta ? new Date(hasta+'T23:59:59') : null;
-
-  return registros.filter(r=>{
-    const d = _tsToDate(r.fecha);
-    if(dDesde && d < dDesde) return false;
-    if(dHasta && d > dHasta) return false;
-    if(trab && (r.trabajadorNombre||'') !== trab) return false;
-    if(veh  && (r.vehiculo||'')         !== veh)  return false;
-    return true;
-  });
-}
-
-function _actualizarPreviewExport(){
-  const filtrados = _getExpFiltrados();
-  const totalL    = filtrados.reduce((s,r)=>s+(r.litros||0),0);
-  const txt       = document.getElementById('exp-preview-txt');
-  if(!txt) return;
-  if(!filtrados.length){
-    txt.innerHTML = '<span style="color:var(--red)">⚠️ No hay registros con los filtros seleccionados</span>';
-  } else {
-    const desde = document.getElementById('exp-desde').value;
-    const hasta = document.getElementById('exp-hasta').value;
-    txt.innerHTML = `<strong>${filtrados.length}</strong> repostajes &nbsp;·&nbsp; <strong>${totalL.toFixed(1)} L</strong> totales &nbsp;·&nbsp; <span style="color:var(--text3)">${desde||'inicio'} → ${hasta||'hoy'}</span>`;
-  }
-}
-
-function _xlsxApplyHeaderStyle(ws, range){
-  // Aplicar negrita y fondo de cabecera a la primera fila
-  if(!ws['!ref']) return;
-  const ref = XLSX.utils.decode_range(ws['!ref']);
-  for(let C=ref.s.c; C<=ref.e.c; C++){
-    const addr = XLSX.utils.encode_cell({r:0, c:C});
-    if(!ws[addr]) continue;
-    ws[addr].s = {
-      font:    { bold:true, color:{rgb:"FFFFFF"} },
-      fill:    { fgColor:{rgb:"E65C00"} },
-      alignment: { horizontal:"center" }
-    };
-  }
-}
-
-async function ejecutarExportExcel(){
-  const filtrados = _getExpFiltrados();
-  if(!filtrados.length){ toast("⚠️ No hay registros con los filtros seleccionados","#f59e0b"); return; }
-
-  const hojaDetalle   = document.getElementById('exp-hoja-detalle').checked;
-  const hojaTrabajador= document.getElementById('exp-hoja-trabajador').checked;
-  const hojaVehiculo  = document.getElementById('exp-hoja-vehiculo').checked;
-  const hojaDiario    = document.getElementById('exp-hoja-diario').checked;
-
-  if(!hojaDetalle && !hojaTrabajador && !hojaVehiculo && !hojaDiario){
-    toast("Selecciona al menos una hoja para incluir","#f59e0b"); return;
-  }
-
+  const rows = registros.map(r=>({
+    "Fecha":       _fmtFecha(r.fecha),
+    "Trabajador":  r.trabajadorNombre||"",
+    "Litros":      r.litros||0,
+    "Vehículo":    r.vehiculo||"",
+    "Contador Depósito":r.odometro||"",
+    "Notas":       r.notas||""
+  }));
+  const ws = XLSX.utils.json_to_sheet(rows);
+  ws["!cols"]=[{wch:18},{wch:22},{wch:10},{wch:20},{wch:14},{wch:30}];
   const wb = XLSX.utils.book_new();
-
-  // ── HOJA 1: DETALLE ──────────────────────────────────
-  if(hojaDetalle){
-    const rows = filtrados.map(r=>({
-      "Fecha":             _fmtFecha(r.fecha),
-      "Trabajador":        r.trabajadorNombre||"",
-      "Litros":            +(r.litros||0).toFixed(2),
-      "Vehículo":          r.vehiculo||"",
-      "Contador Depósito": r.odometro||"",
-      "Notas":             r.notas||""
-    }));
-    const ws1 = XLSX.utils.json_to_sheet(rows);
-    ws1["!cols"]=[{wch:22},{wch:24},{wch:10},{wch:22},{wch:16},{wch:35}];
-    XLSX.utils.book_append_sheet(wb, ws1, "Repostajes");
-  }
-
-  // ── HOJA 2: RESUMEN POR TRABAJADOR ───────────────────
-  if(hojaTrabajador){
-    const tMap={};
-    filtrados.forEach(r=>{
-      const k=r.trabajadorNombre||"Sin nombre";
-      if(!tMap[k]) tMap[k]={litros:0,repostajes:0};
-      tMap[k].litros    += (r.litros||0);
-      tMap[k].repostajes++;
-    });
-    const rows2 = Object.entries(tMap).sort((a,b)=>b[1].litros-a[1].litros).map(([nombre,d])=>({
-      "Trabajador":   nombre,
-      "Repostajes":   d.repostajes,
-      "Total Litros": +d.litros.toFixed(2),
-      "Media L/Repostaje": +(d.litros/d.repostajes).toFixed(2)
-    }));
-    const ws2 = XLSX.utils.json_to_sheet(rows2);
-    ws2["!cols"]=[{wch:26},{wch:14},{wch:16},{wch:20}];
-    XLSX.utils.book_append_sheet(wb, ws2, "Por Trabajador");
-  }
-
-  // ── HOJA 3: RESUMEN POR VEHÍCULO ─────────────────────
-  if(hojaVehiculo){
-    const vMap={};
-    filtrados.forEach(r=>{
-      const k=r.vehiculo||"Sin vehículo";
-      if(!vMap[k]) vMap[k]={litros:0,repostajes:0};
-      vMap[k].litros    += (r.litros||0);
-      vMap[k].repostajes++;
-    });
-    const rows3 = Object.entries(vMap).sort((a,b)=>b[1].litros-a[1].litros).map(([veh,d])=>({
-      "Vehículo":     veh,
-      "Repostajes":   d.repostajes,
-      "Total Litros": +d.litros.toFixed(2),
-      "Media L/Repostaje": +(d.litros/d.repostajes).toFixed(2)
-    }));
-    const ws3 = XLSX.utils.json_to_sheet(rows3);
-    ws3["!cols"]=[{wch:26},{wch:14},{wch:16},{wch:20}];
-    XLSX.utils.book_append_sheet(wb, ws3, "Por Vehículo");
-  }
-
-  // ── HOJA 4: CONSUMO DIARIO ────────────────────────────
-  if(hojaDiario){
-    const dMap={};
-    filtrados.forEach(r=>{
-      const d=_tsToDate(r.fecha);
-      const key=d.toLocaleDateString("es-ES",{day:"2-digit",month:"2-digit",year:"numeric"});
-      if(!dMap[key]) dMap[key]={litros:0,repostajes:0};
-      dMap[key].litros    += (r.litros||0);
-      dMap[key].repostajes++;
-    });
-    // Ordenar por fecha real
-    const rows4 = Object.entries(dMap)
-      .sort((a,b)=>{
-        const p=s=>s.split("/").reverse().join("-");
-        return p(a[0]).localeCompare(p(b[0]));
-      })
-      .map(([fecha,d])=>({
-        "Fecha":        fecha,
-        "Repostajes":   d.repostajes,
-        "Litros totales": +d.litros.toFixed(2)
-      }));
-    const ws4 = XLSX.utils.json_to_sheet(rows4);
-    ws4["!cols"]=[{wch:18},{wch:14},{wch:18}];
-    XLSX.utils.book_append_sheet(wb, ws4, "Consumo Diario");
-  }
-
-  // Nombre del archivo con rango de fechas
-  const desde = document.getElementById('exp-desde').value||'';
-  const hasta = document.getElementById('exp-hasta').value||'';
-  const sufijo = desde&&hasta ? `_${desde}_${hasta}` : '_'+new Date().toISOString().substring(0,10);
-  XLSX.writeFile(wb, `Marcopack_Gasoil${sufijo}.xlsx`);
-  cerrarModal('modal-export-excel');
-  toast(`📥 Excel descargado — ${filtrados.length} registros exportados`,"#2e7d32", 4000);
+  XLSX.utils.book_append_sheet(wb,"Repostajes",ws);
+  // Hoja resumen por trabajador
+  const tMap={};
+  registros.forEach(r=>{ const k=r.trabajadorNombre||"?"; tMap[k]=(tMap[k]||0)+(r.litros||0); });
+  const resRows = Object.entries(tMap).sort((a,b)=>b[1]-a[1]).map(([nombre,litros])=>({Trabajador:nombre,"Total Litros":+litros.toFixed(1)}));
+  const ws2=XLSX.utils.json_to_sheet(resRows);
+  XLSX.utils.book_append_sheet(wb,"Resumen Trabajadores",ws2);
+  XLSX.writeFile(wb,"Marcopack_Gasoil_"+new Date().toISOString().substring(0,10)+".xlsx");
+  toast("📤 Excel exportado","#2e7d32");
 }
-
-// Mantener función legacy por compatibilidad
-function exportarExcel(){ abrirModalExport(); }
-
 
 // ════════════════════════════════════════════════════════
 //  NAVEGACIÓN
@@ -2909,7 +2377,7 @@ document.addEventListener("keydown",e=>{
   if(e.key!=="Escape") return;
   // Cerrar lightbox si está abierto
   if(document.getElementById("lightbox")?.classList.contains("open")){ cerrarLightbox(); e.preventDefault(); return; }
-  ["modal-repostaje","modal-recarga","modal-usuario","modal-vehiculo","modal-cambiar-pass","modal-baja-usuario","modal-export-excel"].forEach(id=>{
+  ["modal-repostaje","modal-recarga","modal-usuario","modal-vehiculo"].forEach(id=>{
     const el=document.getElementById(id);
     if(el&&el.classList.contains("open")){ cerrarModal(id); e.preventDefault(); }
   });

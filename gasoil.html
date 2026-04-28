@@ -1,0 +1,2188 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Marcopack · Control de Gasoil</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+<style>
+/* ===== DESIGN TOKENS — INDUSTRIAL FUEL THEME ===== */
+:root{
+  --bg:#f5f6f0;
+  --surface:#ffffff;
+  --surface2:#f9f9f5;
+  --border:#e2e5d8;
+  --border2:#c8ccb8;
+  --text:#1c2010;
+  --text2:#4a5030;
+  --text3:#8a9268;
+  --accent:#e65c00;
+  --accent2:#f57c00;
+  --accent-light:#fff3e0;
+  --accent-glow:rgba(230,92,0,.15);
+  --green:#2e7d32;
+  --green-bg:#e8f5e9;
+  --orange:#e65c00;
+  --orange-bg:#fff3e0;
+  --red:#c62828;
+  --red-bg:#ffebee;
+  --blue:#1565c0;
+  --blue-bg:#e3f2fd;
+  --fuel:#1a1a1a;
+  --fuel-bg:#f0f0ec;
+  --yellow:#f9a825;
+  --yellow-bg:#fffde7;
+  --shadow-sm:0 1px 4px rgba(28,32,16,.07);
+  --shadow:0 4px 20px rgba(28,32,16,.10);
+  --shadow-lg:0 12px 48px rgba(28,32,16,.14);
+  --radius:12px;
+  --radius-sm:8px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+
+/* ===== SETUP / LOGIN ===== */
+#setup-screen{min-height:100vh;display:none;align-items:center;justify-content:center;
+  background:linear-gradient(135deg,#1a1a1a 0%,#2d2d1a 50%,#1a1a0d 100%);position:relative;overflow:hidden}
+#setup-screen::before{content:'';position:absolute;width:500px;height:500px;border-radius:50%;
+  background:radial-gradient(circle,rgba(230,92,0,.15),transparent 70%);top:-80px;right:-80px;pointer-events:none}
+#login-screen{min-height:100vh;display:flex;align-items:center;justify-content:center;
+  background:linear-gradient(135deg,#1a1a1a 0%,#2d2d1a 50%,#1a1a0d 100%);position:relative;overflow:hidden}
+#login-screen::before{content:'⛽';position:absolute;font-size:300px;opacity:.03;
+  top:50%;left:50%;transform:translate(-50%,-50%);pointer-events:none;user-select:none}
+.login-box{background:rgba(255,255,255,.97);border:1px solid rgba(255,255,255,.2);border-radius:20px;
+  padding:44px 40px;width:100%;max-width:420px;
+  box-shadow:0 20px 80px rgba(0,0,0,.5);position:relative;z-index:1;
+  animation:slideUp .4s ease both}
+@keyframes slideUp{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)}}
+.login-logo{display:flex;align-items:center;gap:14px;margin-bottom:32px}
+.login-logo .icon{width:52px;height:52px;background:linear-gradient(135deg,var(--accent),var(--accent2));
+  border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:26px;
+  box-shadow:0 6px 20px rgba(230,92,0,.4)}
+.login-logo .title{font-size:21px;font-weight:800;color:var(--fuel);letter-spacing:-.3px}
+.login-logo .sub{font-size:11px;color:var(--text3);margin-top:2px;font-weight:500}
+.form-group{margin-bottom:16px}
+.form-group label{display:block;color:var(--text2);font-size:11px;font-weight:700;
+  text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px}
+.form-group input,.form-group select{width:100%;background:var(--surface2);border:1.5px solid var(--border);
+  border-radius:var(--radius-sm);padding:11px 14px;color:var(--text);font-size:14px;
+  font-family:inherit;transition:border-color .2s,box-shadow .2s}
+.form-group input:focus,.form-group select:focus{outline:none;border-color:var(--accent);
+  box-shadow:0 0 0 3px var(--accent-glow)}
+.btn-primary{background:linear-gradient(135deg,var(--accent),var(--accent2));color:white;border:none;
+  border-radius:var(--radius-sm);padding:13px;font-size:15px;font-weight:700;
+  cursor:pointer;width:100%;margin-top:4px;font-family:inherit;
+  box-shadow:0 4px 16px rgba(230,92,0,.4);transition:transform .15s,box-shadow .15s;letter-spacing:.01em}
+.btn-primary:hover{transform:translateY(-1px);box-shadow:0 6px 22px rgba(230,92,0,.5)}
+.btn-primary:active{transform:translateY(0)}
+.error-msg{background:var(--red-bg);border:1px solid #ef9a9a;border-radius:var(--radius-sm);
+  padding:10px 14px;color:var(--red);font-size:13px;margin-bottom:14px;display:none;font-weight:500}
+.login-note{color:var(--text3);font-size:12px;text-align:center;margin-top:18px}
+.setup-warning{background:var(--yellow-bg);border:1px solid #f9a825;border-radius:10px;
+  padding:12px 14px;margin-bottom:18px;display:flex;gap:10px;align-items:flex-start}
+.setup-warning-icon{font-size:18px}
+.setup-warning-text{color:var(--text2);font-size:12px;line-height:1.5}
+
+/* ===== APP SHELL ===== */
+#app{display:none}
+.header{background:var(--fuel);border-bottom:2px solid var(--accent);
+  padding:12px 24px;display:flex;align-items:center;justify-content:space-between;
+  flex-wrap:wrap;gap:8px;box-shadow:0 3px 12px rgba(0,0,0,.3);position:sticky;top:0;z-index:100}
+.header-left{display:flex;align-items:center;gap:12px}
+.header-logo{width:38px;height:38px;background:linear-gradient(135deg,var(--accent),var(--accent2));
+  border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:19px;
+  box-shadow:0 3px 10px rgba(230,92,0,.4)}
+.header-title{font-size:17px;font-weight:800;color:white;letter-spacing:-.2px}
+.header-sub{font-size:11px;color:#aaa;font-weight:500}
+.header-right{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.user-badge{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);border-radius:var(--radius-sm);
+  padding:5px 11px;font-size:12px;color:#ddd;font-weight:500}
+.user-badge span{color:var(--yellow);font-weight:700}
+.rol-badge{color:var(--accent2);font-weight:700}
+.btn-sm{padding:6px 13px;border-radius:var(--radius-sm);font-size:12px;font-weight:600;cursor:pointer;border:none;font-family:inherit;transition:all .15s}
+.btn-add{background:linear-gradient(135deg,var(--accent),var(--accent2));color:white;
+  box-shadow:0 2px 8px rgba(230,92,0,.35)}
+.btn-add:hover{box-shadow:0 4px 14px rgba(230,92,0,.5);transform:translateY(-1px)}
+.btn-logout{background:rgba(255,255,255,.1);color:#ccc;border:1px solid rgba(255,255,255,.15)}
+.btn-logout:hover{background:var(--red-bg);color:var(--red);border-color:#ef9a9a}
+.btn-excel{background:var(--green-bg);color:var(--green);border:1px solid #a5d6a7}
+.btn-excel:hover{background:#c8e6c9}
+.btn-admin{background:rgba(249,168,37,.15);color:var(--yellow);border:1px solid rgba(249,168,37,.3)}
+.btn-admin:hover{background:rgba(249,168,37,.25)}
+.nivel-badge{border-radius:var(--radius-sm);padding:5px 11px;font-size:12px;font-weight:700;cursor:pointer}
+.nivel-ok{background:var(--green-bg);color:var(--green);border:1px solid #a5d6a7}
+.nivel-warn{background:var(--yellow-bg);color:#f57f17;border:1px solid #ffe082}
+.nivel-crit{background:var(--red-bg);color:var(--red);border:1px solid #ef9a9a;animation:pulse-red 1.5s infinite}
+@keyframes pulse-red{0%,100%{box-shadow:0 0 0 0 rgba(198,40,40,.3)}50%{box-shadow:0 0 0 6px rgba(198,40,40,0)}}
+
+/* ===== STATS ===== */
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:10px;padding:16px 24px 0}
+.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+  padding:14px 15px;box-shadow:var(--shadow-sm);transition:all .2s;cursor:default}
+.stat-card.clickable{cursor:pointer}
+.stat-card.clickable:hover{border-color:var(--accent);box-shadow:0 4px 16px var(--accent-glow);transform:translateY(-2px)}
+.stat-card .icon{font-size:22px;margin-bottom:7px}
+.stat-val{font-size:24px;font-weight:800;letter-spacing:-.5px;color:var(--text)}
+.stat-val.accent{color:var(--accent)}
+.stat-val.green{color:var(--green)}
+.stat-val.blue{color:var(--blue)}
+.stat-lbl{color:var(--text3);font-size:11px;margin-top:3px;font-weight:600;text-transform:uppercase;letter-spacing:.04em}
+.stat-sub{font-size:10px;color:var(--text3);margin-top:2px}
+
+/* ===== DEPOSITO VISUAL ===== */
+.deposito-wrap{margin:0 24px 0;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px 20px;box-shadow:var(--shadow-sm);display:flex;align-items:center;gap:20px}
+.deposito-tank{width:80px;height:120px;border:3px solid var(--border2);border-radius:6px 6px 8px 8px;position:relative;overflow:hidden;background:#f5f5f5;flex-shrink:0}
+.deposito-fill{position:absolute;bottom:0;left:0;right:0;background:linear-gradient(180deg,var(--accent2),var(--accent));transition:height .8s cubic-bezier(.4,0,.2,1);border-radius:0 0 5px 5px}
+.deposito-pct{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:800;color:white;text-shadow:0 1px 3px rgba(0,0,0,.4);z-index:1}
+.deposito-info{flex:1}
+.deposito-title{font-size:14px;font-weight:800;color:var(--text);margin-bottom:8px}
+.deposito-bar-wrap{background:var(--surface2);border:1px solid var(--border);border-radius:50px;height:20px;overflow:hidden;margin-bottom:8px}
+.deposito-bar{height:100%;border-radius:50px;background:linear-gradient(90deg,var(--accent2),var(--accent));transition:width .8s cubic-bezier(.4,0,.2,1);display:flex;align-items:center;padding-left:10px}
+.deposito-bar span{font-size:11px;font-weight:700;color:white;white-space:nowrap}
+.deposito-datos{display:flex;gap:16px;flex-wrap:wrap}
+.deposito-dato{font-size:12px;color:var(--text2)}
+.deposito-dato strong{color:var(--text);font-weight:700}
+.btn-recargar{background:linear-gradient(135deg,var(--green),#388e3c);color:white;border:none;
+  border-radius:var(--radius-sm);padding:9px 18px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;
+  box-shadow:0 3px 10px rgba(46,125,50,.3);transition:all .15s;white-space:nowrap}
+.btn-recargar:hover{transform:translateY(-1px);box-shadow:0 5px 16px rgba(46,125,50,.4)}
+
+/* ===== NAV ===== */
+.nav{display:flex;gap:3px;padding:12px 24px 0;flex-wrap:wrap}
+.nav-btn{background:transparent;border:1px solid transparent;border-radius:var(--radius-sm);
+  padding:7px 13px;color:var(--text3);font-size:12px;font-weight:600;cursor:pointer;
+  transition:all .15s;white-space:nowrap;font-family:inherit}
+.nav-btn:hover{background:var(--surface2);color:var(--text2)}
+.nav-btn.active{background:var(--accent-light);color:var(--accent);border-color:#f0c090;font-weight:700}
+
+/* ===== FILTERS ===== */
+.filters{padding:10px 24px;display:flex;gap:7px;flex-wrap:wrap;align-items:center}
+.filters input,.filters select{background:var(--surface);border:1.5px solid var(--border);
+  border-radius:var(--radius-sm);padding:7px 11px;color:var(--text);font-size:12px;
+  font-family:inherit;transition:border-color .2s}
+.filters input:focus,.filters select:focus{outline:none;border-color:var(--accent)}
+.filters input{min-width:200px}
+.btn-clear{background:transparent;border:1px solid #ef9a9a;color:var(--red);
+  border-radius:var(--radius-sm);padding:7px 11px;font-size:12px;cursor:pointer;font-family:inherit}
+.btn-clear:hover{background:var(--red-bg)}
+
+/* ===== TABLE ===== */
+.table-wrap{padding:8px 24px 28px;overflow-x:auto}
+table{width:100%;border-collapse:separate;border-spacing:0 4px;min-width:700px}
+thead th{padding:8px 10px;color:var(--text3);font-size:11px;font-weight:700;
+  text-align:left;cursor:pointer;white-space:nowrap;user-select:none;text-transform:uppercase;letter-spacing:.04em}
+thead th:hover{color:var(--accent)}
+tbody tr{background:var(--surface);cursor:pointer;transition:all .15s;box-shadow:var(--shadow-sm)}
+tbody tr:hover{box-shadow:0 4px 16px var(--accent-glow);transform:translateY(-1px)}
+tbody td{padding:10px 10px;font-size:12px;color:var(--text)}
+tbody td:first-child{border-radius:var(--radius-sm) 0 0 var(--radius-sm);border-left:3px solid var(--ec,var(--accent))}
+tbody td:last-child{border-radius:0 var(--radius-sm) var(--radius-sm) 0}
+.badge{display:inline-block;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:600;white-space:nowrap}
+.badge-fuel{background:var(--accent-light);color:var(--accent)}
+.badge-recar{background:var(--green-bg);color:var(--green)}
+.badge-edit{background:var(--blue-bg);color:var(--blue)}
+.empty-row td{text-align:center;color:var(--text3);font-style:italic;padding:32px!important;background:transparent!important;box-shadow:none!important}
+.empty-row{cursor:default!important;transform:none!important}
+
+/* ===== MODAL ===== */
+.modal-overlay{position:fixed;inset:0;background:rgba(10,15,5,.5);z-index:1000;
+  display:none;align-items:center;justify-content:center;
+  backdrop-filter:blur(6px);padding:14px}
+.modal-overlay.open{display:flex}
+.modal{background:var(--surface);border:1px solid var(--border);border-radius:18px;
+  width:100%;max-width:560px;max-height:92vh;overflow-y:auto;padding:30px;
+  position:relative;box-shadow:var(--shadow-lg);
+  animation:fadeScale .25s ease both}
+.modal.wide{max-width:740px}
+@keyframes fadeScale{from{opacity:0;transform:scale(.96)}to{opacity:1;transform:scale(1)}}
+.modal h2{color:var(--accent);font-size:18px;margin-bottom:20px;font-weight:800;letter-spacing:-.2px}
+.modal-close{position:absolute;top:14px;right:16px;background:var(--surface2);
+  border:1px solid var(--border);color:var(--text2);font-size:18px;cursor:pointer;
+  border-radius:8px;width:30px;height:30px;display:flex;align-items:center;justify-content:center;
+  transition:background .15s}
+.modal-close:hover{background:var(--red-bg);color:var(--red);border-color:#ef9a9a}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.field{margin-bottom:4px}
+.field label{display:block;color:var(--text3);font-size:11px;font-weight:700;
+  text-transform:uppercase;letter-spacing:.05em;margin-bottom:5px}
+.field input,.field select,.field textarea{width:100%;background:var(--surface2);
+  border:1.5px solid var(--border);border-radius:var(--radius-sm);
+  padding:9px 12px;color:var(--text);font-size:13px;font-family:inherit;transition:border-color .2s}
+.field textarea{min-height:70px;resize:vertical}
+.field input:focus,.field select:focus,.field textarea:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-glow)}
+.modal-footer{display:flex;gap:8px;justify-content:flex-end;margin-top:20px;
+  padding-top:16px;border-top:1px solid var(--border)}
+.btn-cancel{background:transparent;border:1.5px solid var(--border);color:var(--text2);
+  border-radius:var(--radius-sm);padding:9px 22px;cursor:pointer;font-size:13px;font-family:inherit;font-weight:600;transition:background .15s}
+.btn-cancel:hover{background:var(--surface2)}
+.btn-save{background:linear-gradient(135deg,var(--accent),var(--accent2));color:white;
+  border:none;border-radius:var(--radius-sm);padding:9px 24px;font-size:13px;
+  font-weight:700;cursor:pointer;font-family:inherit;
+  box-shadow:0 3px 12px rgba(230,92,0,.3);transition:all .15s}
+.btn-save:hover{box-shadow:0 5px 18px rgba(230,92,0,.4);transform:translateY(-1px)}
+.btn-delete{background:var(--red-bg);color:var(--red);border:1px solid #ef9a9a;
+  border-radius:var(--radius-sm);padding:9px 16px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;transition:all .15s}
+.btn-delete:hover{background:var(--red);color:white}
+
+/* ===== DETALLE REGISTRO ===== */
+.det-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px}
+.det-item{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 13px}
+.det-item-lbl{font-size:10px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px}
+.det-item-val{font-size:14px;font-weight:700;color:var(--text)}
+
+/* ===== CHART SECTION ===== */
+.chart-section{padding:8px 24px 28px}
+.chart-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px;box-shadow:var(--shadow-sm);margin-bottom:14px}
+.chart-title{font-size:13px;font-weight:800;color:var(--text);margin-bottom:14px;text-transform:uppercase;letter-spacing:.04em}
+.chart-wrap{position:relative;height:280px}
+
+/* ===== RANKING TRABAJADORES ===== */
+.ranking-list{display:flex;flex-direction:column;gap:8px;padding:0 24px 28px}
+.rank-item{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:13px 17px;display:flex;align-items:center;gap:14px;box-shadow:var(--shadow-sm);transition:all .15s}
+.rank-item:hover{box-shadow:var(--shadow);transform:translateY(-1px)}
+.rank-pos{width:32px;height:32px;border-radius:50%;background:var(--surface2);border:2px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;color:var(--text2);flex-shrink:0}
+.rank-pos.gold{background:linear-gradient(135deg,#f9a825,#f57f17);border-color:#f9a825;color:white}
+.rank-pos.silver{background:linear-gradient(135deg,#90a4ae,#607d8b);border-color:#90a4ae;color:white}
+.rank-pos.bronze{background:linear-gradient(135deg,#a1887f,#795548);border-color:#a1887f;color:white}
+.rank-nombre{flex:1;font-size:14px;font-weight:700;color:var(--text)}
+.rank-litros{font-size:18px;font-weight:800;color:var(--accent)}
+.rank-bar-wrap{flex:2;background:var(--surface2);border-radius:50px;height:8px;overflow:hidden}
+.rank-bar{height:100%;border-radius:50px;background:linear-gradient(90deg,var(--accent2),var(--accent));transition:width .6s ease}
+
+/* ===== HISTORIAL RECARGAS ===== */
+.recarga-item{background:var(--surface);border:1px solid var(--border);border-left:4px solid var(--green);border-radius:var(--radius-sm);padding:12px 16px;margin-bottom:8px;box-shadow:var(--shadow-sm);display:flex;justify-content:space-between;align-items:center}
+.recarga-dato{font-size:12px;color:var(--text2)}
+.recarga-litros{font-size:18px;font-weight:800;color:var(--green)}
+
+/* ===== ADMIN USUARIOS ===== */
+.user-item{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:13px 17px;margin-bottom:8px;display:flex;align-items:center;gap:12px;box-shadow:var(--shadow-sm)}
+.user-avatar{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:800;color:white;flex-shrink:0}
+.user-info{flex:1}
+.user-name{font-size:14px;font-weight:700;color:var(--text)}
+.user-email{font-size:11px;color:var(--text3)}
+.user-rol-badge{border-radius:20px;padding:3px 10px;font-size:11px;font-weight:700}
+
+/* ===== TOAST ===== */
+#toast{position:fixed;bottom:28px;right:28px;z-index:9999;
+  padding:12px 20px;border-radius:10px;color:white;font-size:13px;font-weight:700;
+  box-shadow:0 6px 24px rgba(0,0,0,.3);transform:translateY(60px);opacity:0;
+  transition:all .3s ease;pointer-events:none;max-width:320px}
+#toast.show{transform:translateY(0);opacity:1}
+
+/* ===== SELECCIÓN MÚLTIPLE Y BORRADO MASIVO ===== */
+.barra-seleccion{display:none;align-items:center;gap:10px;padding:8px 24px;
+  background:var(--red-bg);border-bottom:1px solid #ef9a9a;flex-wrap:wrap}
+.barra-seleccion.visible{display:flex}
+.barra-sel-info{font-size:13px;font-weight:700;color:var(--red);flex:1}
+.btn-borrar-sel{background:var(--red);color:white;border:none;border-radius:var(--radius-sm);
+  padding:7px 16px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;transition:all .15s}
+.btn-borrar-sel:hover{background:#b71c1c}
+.btn-borrar-todo{background:var(--red-bg);color:var(--red);border:1.5px solid #ef9a9a;border-radius:var(--radius-sm);
+  padding:7px 16px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;transition:all .15s}
+.btn-borrar-todo:hover{background:var(--red);color:white}
+.btn-cancelar-sel{background:transparent;border:1.5px solid var(--border);color:var(--text2);
+  border-radius:var(--radius-sm);padding:7px 14px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;transition:background .15s}
+.btn-cancelar-sel:hover{background:var(--surface2)}
+.btn-modo-seleccion{background:rgba(198,40,40,.12);color:var(--red);border:1px solid #ef9a9a;
+  border-radius:var(--radius-sm);padding:6px 13px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .15s;display:none}
+.btn-modo-seleccion:hover{background:var(--red-bg)}
+.cb-fila{width:16px;height:16px;cursor:pointer;accent-color:var(--red);flex-shrink:0}
+.cb-todo{width:16px;height:16px;cursor:pointer;accent-color:var(--red)}
+tbody tr.seleccionada{background:var(--red-bg)!important;outline:1.5px solid #ef9a9a}
+
+
+::-webkit-scrollbar-track{background:var(--surface2)}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
+::-webkit-scrollbar-thumb:hover{background:var(--accent)}
+
+/* ===== FOTO CONTADOR ===== */
+.foto-upload-zone{border:2px dashed var(--border2);border-radius:var(--radius);padding:20px 16px;
+  text-align:center;cursor:pointer;transition:all .2s;background:var(--surface2);position:relative;
+  margin-top:4px}
+.foto-upload-zone:hover,.foto-upload-zone.drag-over{border-color:var(--accent);background:var(--accent-light)}
+.foto-upload-zone input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.foto-upload-icon{font-size:28px;margin-bottom:6px}
+.foto-upload-text{font-size:12px;font-weight:700;color:var(--text2)}
+.foto-upload-sub{font-size:11px;color:var(--text3);margin-top:3px}
+.foto-preview-wrap{position:relative;margin-top:10px;border-radius:var(--radius);overflow:hidden;
+  border:2px solid var(--border);box-shadow:var(--shadow-sm);background:#000;display:none}
+.foto-preview-wrap img{width:100%;max-height:200px;object-fit:cover;display:block}
+.foto-preview-overlay{position:absolute;top:0;right:0;display:flex;gap:6px;padding:8px}
+.foto-btn-remove{background:rgba(198,40,40,.9);color:white;border:none;border-radius:6px;
+  padding:4px 10px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;backdrop-filter:blur(4px)}
+.foto-btn-remove:hover{background:var(--red)}
+.foto-progress-wrap{margin-top:8px;display:none}
+.foto-progress-bar-bg{background:var(--surface2);border:1px solid var(--border);border-radius:50px;height:18px;overflow:hidden}
+.foto-progress-bar{height:100%;border-radius:50px;background:linear-gradient(90deg,var(--accent2),var(--accent));
+  width:0%;transition:width .3s ease;display:flex;align-items:center;padding-left:8px}
+.foto-progress-bar span{font-size:10px;font-weight:700;color:white;white-space:nowrap}
+.foto-progress-text{font-size:11px;color:var(--text3);margin-top:4px;font-weight:600}
+/* Miniatura en tabla */
+.foto-thumb{width:34px;height:34px;border-radius:6px;object-fit:cover;cursor:pointer;
+  border:2px solid var(--border);transition:all .2s;display:block}
+.foto-thumb:hover{border-color:var(--accent);transform:scale(1.1);box-shadow:0 4px 12px var(--accent-glow)}
+.foto-icon-badge{display:inline-flex;align-items:center;gap:3px;background:var(--blue-bg);
+  color:var(--blue);border-radius:20px;padding:2px 8px;font-size:10px;font-weight:700;cursor:pointer;transition:all .15s}
+.foto-icon-badge:hover{background:var(--blue);color:white}
+/* Lightbox */
+#lightbox{position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:9999;display:none;
+  align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(8px);cursor:zoom-out}
+#lightbox.open{display:flex}
+#lightbox img{max-width:100%;max-height:90vh;border-radius:12px;box-shadow:0 20px 80px rgba(0,0,0,.8);
+  object-fit:contain;animation:fadeScale .2s ease}
+#lightbox-close{position:fixed;top:16px;right:20px;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.25);
+  color:white;font-size:22px;cursor:pointer;border-radius:10px;width:42px;height:42px;
+  display:flex;align-items:center;justify-content:center;backdrop-filter:blur(6px);transition:background .15s}
+#lightbox-close:hover{background:rgba(198,40,40,.8)}
+#lightbox-info{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);
+  background:rgba(255,255,255,.12);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.2);
+  border-radius:20px;padding:8px 20px;color:white;font-size:12px;font-weight:600;white-space:nowrap}
+
+/* ===== SECTION VIEWS ===== */
+.view{display:none}
+.view.active{display:block}
+
+/* ===== PAGINACION ===== */
+.paginacion{display:flex;align-items:center;justify-content:space-between;padding:0 24px 16px;flex-wrap:wrap;gap:8px}
+.paginacion-info{font-size:12px;color:var(--text3)}
+.paginacion-btns{display:flex;gap:4px}
+.paginacion-btns button{padding:5px 11px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;border:1px solid var(--border);background:var(--surface);color:var(--text2);font-family:inherit;transition:all .15s}
+.paginacion-btns button:hover:not(:disabled){background:var(--accent-light);color:var(--accent);border-color:#f0c090}
+.paginacion-btns button.active{background:var(--accent);color:white;border-color:var(--accent)}
+.paginacion-btns button:disabled{opacity:.4;cursor:default}
+
+/* ===== RESPONSIVE ===== */
+@media(max-width:600px){
+  .stats{grid-template-columns:repeat(2,1fr)}
+  .deposito-wrap{flex-direction:column}
+  .grid2{grid-template-columns:1fr}
+  .det-grid{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<!-- TOAST -->
+<div id="toast"></div>
+
+<!-- LIGHTBOX FOTO -->
+<div id="lightbox" onclick="cerrarLightbox()">
+  <button id="lightbox-close" onclick="cerrarLightbox()">✕</button>
+  <img id="lightbox-img" src="" alt="Foto contador"/>
+  <div id="lightbox-info"></div>
+</div>
+
+<!-- SETUP SCREEN (solo primera vez) -->
+<div id="setup-screen">
+  <div class="login-box">
+    <div class="login-logo">
+      <div class="icon">⛽</div>
+      <div><div class="title">Control de Gasoil</div><div class="sub">Configuración inicial</div></div>
+    </div>
+    <div class="setup-warning">
+      <span class="setup-warning-icon">⚠️</span>
+      <div class="setup-warning-text"><strong>Solo aparece una vez.</strong><br>Crea la cuenta de administrador. Nadie más podrá registrarse.</div>
+    </div>
+    <div id="setup-error" class="error-msg"></div>
+    <div class="form-group"><label>Tu nombre</label><input type="text" id="setup-nombre" placeholder="Nombre Apellido"/></div>
+    <div class="form-group"><label>Correo electrónico</label><input type="email" id="setup-email" placeholder="admin@empresa.com"/></div>
+    <div class="form-group"><label>Contraseña <span style="color:var(--text3);font-size:10px;font-weight:400">(mín. 6 caracteres)</span></label><input type="password" id="setup-pass" placeholder="Contraseña segura" onkeydown="if(event.key==='Enter')crearAdmin()"/></div>
+    <button class="btn-primary" onclick="crearAdmin()">⛽ Crear cuenta y entrar</button>
+  </div>
+</div>
+
+<!-- LOGIN -->
+<div id="login-screen">
+  <div class="login-box">
+    <div class="login-logo">
+      <div class="icon">⛽</div>
+      <div><div class="title">Control de Gasoil</div><div class="sub">Marcopack · Gestión de Combustible</div></div>
+    </div>
+    <div id="login-error" class="error-msg"></div>
+    <div class="form-group"><label>Correo electrónico</label><input type="email" id="login-email" placeholder="usuario@empresa.com" autocomplete="email"/></div>
+    <div class="form-group"><label>Contraseña</label><input type="password" id="login-pass" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()" autocomplete="current-password"/></div>
+    <button class="btn-primary" id="btn-login" onclick="doLogin()">⛽ Entrar</button>
+    <p class="login-note">🔒 Acceso restringido — solo empleados de Marcopack</p>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app">
+  <!-- HEADER -->
+  <div class="header">
+    <div class="header-left">
+      <div class="header-logo">⛽</div>
+      <div>
+        <div class="header-title">⛽ Marcopack · Gasoil</div>
+        <div class="header-sub">Control de Combustible Industrial</div>
+      </div>
+    </div>
+    <div class="header-right">
+      <div id="nivel-badge" class="nivel-badge nivel-ok" onclick="setVista('deposito')" title="Ver depósito">⛽ Depósito: <span id="nivel-pct-hdr">—</span></div>
+      <div class="user-badge">👤 <span id="uname"></span> · <span class="rol-badge" id="urol"></span></div>
+      <button class="btn-sm btn-excel" id="btn-excel-hdr" onclick="exportarExcel()">📤 Excel</button>
+      <button class="btn-sm btn-add" onclick="abrirModalRepostaje()">+ Añadir Repostaje</button>
+      <button class="btn-sm btn-admin" id="btn-admin-hdr" style="display:none" onclick="setVista('admin')">👑 Admin</button>
+      <button class="btn-sm btn-logout" onclick="doLogout()">Salir</button>
+    </div>
+  </div>
+
+  <!-- STATS -->
+  <div class="stats" id="stats-row"></div>
+
+  <!-- DEPOSITO VISUAL -->
+  <div style="padding:12px 24px 0">
+    <div class="deposito-wrap" id="deposito-hdr-wrap">
+      <div class="deposito-tank">
+        <div class="deposito-fill" id="dep-fill-hdr" style="height:0%"></div>
+        <div class="deposito-pct" id="dep-pct-hdr">—</div>
+      </div>
+      <div class="deposito-info">
+        <div class="deposito-title">🛢️ Depósito Principal</div>
+        <div class="deposito-bar-wrap">
+          <div class="deposito-bar" id="dep-bar-hdr" style="width:0%">
+            <span id="dep-bar-lbl-hdr"></span>
+          </div>
+        </div>
+        <div class="deposito-datos" id="dep-datos-hdr"></div>
+      </div>
+      <button class="btn-recargar" id="btn-recargar-dep" onclick="abrirModalRecarga()" style="display:none">🔋 Registrar Recarga</button>
+    </div>
+  </div>
+
+  <!-- NAV -->
+  <div class="nav">
+    <button class="nav-btn active" id="nav-dashboard" onclick="setVista('dashboard')">🏠 Inicio</button>
+    <button class="nav-btn" id="nav-registros" onclick="setVista('registros')">📋 Registros</button>
+    <button class="nav-btn" id="nav-estadisticas" onclick="setVista('estadisticas')">📊 Estadísticas</button>
+    <button class="nav-btn" id="nav-ranking" onclick="setVista('ranking')">🏆 Trabajadores</button>
+    <button class="nav-btn" id="nav-deposito" onclick="setVista('deposito')">🛢️ Depósito</button>
+    <button class="nav-btn" id="nav-admin" onclick="setVista('admin')" style="display:none">👑 Admin</button>
+  </div>
+
+  <!-- VISTA: DASHBOARD -->
+  <div class="view active" id="view-dashboard">
+    <div class="stats" id="stats-row-dash" style="padding-top:12px"></div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px;padding:12px 24px 28px">
+      <div class="chart-card">
+        <div class="chart-title">📅 Consumo últimos 30 días</div>
+        <div class="chart-wrap"><canvas id="chart-dias"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">👷 Top trabajadores (mes actual)</div>
+        <div class="chart-wrap"><canvas id="chart-trabajadores"></canvas></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- VISTA: REGISTROS -->
+  <div class="view" id="view-registros">
+    <div class="filters">
+      <input type="text" id="busqueda" placeholder="🔍 Buscar trabajador, vehículo, notas..." oninput="paginaActual=1;renderRegistros()"/>
+      <select id="f-trabajador" onchange="paginaActual=1;renderRegistros()"><option value="">👷 Todos los trabajadores</option></select>
+      <select id="f-vehiculo" onchange="paginaActual=1;renderRegistros()"><option value="">🚗 Todos los vehículos</option></select>
+      <select id="f-mes" onchange="paginaActual=1;renderRegistros()"><option value="">📅 Todos los meses</option></select>
+      <button class="btn-clear" onclick="limpiarFiltros()">✕ Limpiar</button>
+      <button class="btn-modo-seleccion" id="btn-modo-seleccion" onclick="toggleModoSeleccion()">☑️ Seleccionar</button>
+    </div>
+    <!-- Barra de borrado masivo (solo visible en modo selección) -->
+    <div class="barra-seleccion" id="barra-seleccion">
+      <span class="barra-sel-info" id="barra-sel-info">0 repostajes seleccionados</span>
+      <button class="btn-borrar-todo" onclick="borrarTodosLosRepostajes()">🗑 Borrar TODOS los registros</button>
+      <button class="btn-borrar-sel" id="btn-borrar-seleccionados" onclick="borrarRepostajesSeleccionados()" disabled>🗑 Borrar seleccionados</button>
+      <button class="btn-cancelar-sel" onclick="toggleModoSeleccion()">✕ Cancelar</button>
+    </div>
+    <div class="table-wrap">
+      <table id="tabla-registros">
+        <thead>
+          <tr>
+            <th id="th-checkbox" style="display:none;width:36px"><input type="checkbox" class="cb-todo" id="cb-seleccionar-todo" onchange="toggleSeleccionTodo(this.checked)" title="Seleccionar todos"></th>
+            <th onclick="sortBy('fecha')">FECHA ↕</th>
+            <th onclick="sortBy('trabajador')">TRABAJADOR ↕</th>
+            <th onclick="sortBy('vehiculo')">VEHÍCULO</th>
+            <th onclick="sortBy('litros')">LITROS ↕</th>
+            <th>CONTADOR DEPÓSITO</th>
+            <th>NOTAS</th>
+            <th>📷</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="tbody-registros"></tbody>
+      </table>
+    </div>
+    <div class="paginacion">
+      <span class="paginacion-info" id="pag-info"></span>
+      <div class="paginacion-btns" id="pag-btns"></div>
+    </div>
+  </div>
+
+  <!-- VISTA: ESTADÍSTICAS -->
+  <div class="view" id="view-estadisticas">
+    <div class="chart-section">
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px">
+        <div class="chart-card">
+          <div class="chart-title">📆 Consumo mensual (año actual)</div>
+          <div class="chart-wrap"><canvas id="chart-mensual"></canvas></div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-title">🚗 Consumo por vehículo</div>
+          <div class="chart-wrap"><canvas id="chart-vehiculos"></canvas></div>
+        </div>
+        <div class="chart-card" style="grid-column:1/-1">
+          <div class="chart-title">📈 Evolución consumo diario (últimos 90 días)</div>
+          <div class="chart-wrap" style="height:200px"><canvas id="chart-evolucion"></canvas></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- VISTA: RANKING -->
+  <div class="view" id="view-ranking">
+    <div style="padding:12px 24px 8px;display:flex;align-items:center;justify-content:space-between">
+      <div>
+        <div style="font-size:16px;font-weight:800;color:var(--text)">🏆 Ranking de Trabajadores</div>
+        <div style="font-size:12px;color:var(--text3);margin-top:3px">Litros consumidos por trabajador</div>
+      </div>
+      <select id="f-ranking-periodo" onchange="renderRanking()" style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:6px 11px;font-size:12px;color:var(--text);font-family:inherit">
+        <option value="mes">Este mes</option>
+        <option value="anio">Este año</option>
+        <option value="todo">Todo el tiempo</option>
+      </select>
+    </div>
+    <div class="ranking-list" id="ranking-list"></div>
+  </div>
+
+  <!-- VISTA: DEPÓSITO -->
+  <div class="view" id="view-deposito">
+    <div style="padding:12px 24px 8px">
+      <div style="font-size:16px;font-weight:800;color:var(--text);margin-bottom:4px">🛢️ Gestión del Depósito</div>
+      <div style="font-size:12px;color:var(--text3)">Seguimiento del nivel de combustible y recargas</div>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px;padding:8px 24px">
+      <div class="chart-card">
+        <div class="chart-title">📉 Evolución nivel depósito</div>
+        <div class="chart-wrap"><canvas id="chart-deposito-nivel"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+          <div class="chart-title" style="margin-bottom:0">🔋 Historial de Recargas</div>
+          <button class="btn-recargar" style="padding:6px 14px;font-size:12px" onclick="abrirModalRecarga()">+ Añadir</button>
+        </div>
+        <div id="recargas-list" style="max-height:220px;overflow-y:auto"></div>
+      </div>
+    </div>
+    <!-- Config depósito (solo admin) -->
+    <div id="config-deposito-wrap" style="padding:0 24px 28px;display:none">
+      <div class="chart-card">
+        <div class="chart-title">⚙️ Configuración del Depósito</div>
+        <div class="grid2" style="max-width:500px">
+          <div class="field">
+            <label>Capacidad total (litros)</label>
+            <input type="number" id="dep-capacidad-inp" placeholder="Ej: 2000" min="1"/>
+          </div>
+          <div class="field">
+            <label>Nivel actual (litros)</label>
+            <input type="number" id="dep-actual-inp" placeholder="Litros actuales" min="0"/>
+          </div>
+          <div class="field">
+            <label>Alerta nivel bajo (%)</label>
+            <input type="number" id="dep-alerta-inp" placeholder="Ej: 20" min="1" max="99" value="20"/>
+          </div>
+        </div>
+        <button class="btn-save" style="margin-top:14px" onclick="guardarConfigDeposito()">💾 Guardar configuración</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- VISTA: ADMIN -->
+  <div class="view" id="view-admin">
+    <div style="padding:12px 24px 8px">
+      <div style="font-size:16px;font-weight:800;color:var(--text);margin-bottom:4px">👑 Administración</div>
+      <div style="font-size:12px;color:var(--text3)">Gestión de usuarios del sistema</div>
+    </div>
+    <div style="padding:8px 24px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+        <div style="font-size:13px;font-weight:700;color:var(--text)">👷 Usuarios del sistema</div>
+        <button class="btn-save" onclick="abrirModalUsuario()" style="padding:7px 16px;font-size:12px">+ Nuevo usuario</button>
+      </div>
+      <div id="admin-usuarios-list"></div>
+    </div>
+    <!-- Vehículos -->
+    <div style="padding:8px 24px 28px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+        <div style="font-size:13px;font-weight:700;color:var(--text)">🚗 Vehículos registrados</div>
+        <button class="btn-save" onclick="abrirModalVehiculo()" style="padding:7px 16px;font-size:12px">+ Nuevo vehículo</button>
+      </div>
+      <div id="admin-vehiculos-list"></div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: REPOSTAJE -->
+<div class="modal-overlay" id="modal-repostaje">
+  <div class="modal">
+    <button class="modal-close" onclick="cerrarModal('modal-repostaje')">✕</button>
+    <h2 id="modal-repostaje-titulo">⛽ Nuevo Repostaje</h2>
+    <div class="grid2">
+      <div class="field" style="grid-column:1/-1">
+        <label>Trabajador</label>
+        <select id="r-trabajador">
+          <option value="">— Seleccionar trabajador —</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Fecha y hora</label>
+        <input type="datetime-local" id="r-fecha"/>
+      </div>
+      <div class="field">
+        <label>Litros echados</label>
+        <input type="number" id="r-litros" placeholder="Ej: 45.5" step="0.1" min="0.1"/>
+      </div>
+      <div class="field">
+        <label>Vehículo</label>
+        <select id="r-vehiculo">
+          <option value="">— Seleccionar vehículo —</option>
+          <option value="VEHICULO PERSONAL">🚗 Vehículo Personal</option>
+          <option value="SEAT LEON">🚗 Seat León</option>
+          <option value="SKODA">🚗 Skoda</option>
+          <option value="FURGONETA VOLKSWAGEN">🚐 Furgoneta Volkswagen</option>
+          <option value="FURGONETA FORD">🚐 Furgoneta Ford</option>
+          <option value="FURGONETA RENAULT">🚐 Furgoneta Renault</option>
+          <option value="FURGONETA CITROEN">🚐 Furgoneta Citroën</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Contador General Depósito</label>
+        <input type="number" id="r-odometro" placeholder="Lectura del contador del depósito" min="0"/>
+      </div>
+    </div>
+    <div class="field" style="margin-top:10px">
+      <label>Notas / Observaciones</label>
+      <textarea id="r-notas" placeholder="Cualquier observación relevante..."></textarea>
+    </div>
+
+    <!-- FOTO CONTADOR -->
+    <div class="field" style="margin-top:10px">
+      <label>📷 Foto del contador del depósito</label>
+      <div class="foto-upload-zone" id="foto-drop-zone"
+           ondragover="event.preventDefault();this.classList.add('drag-over')"
+           ondragleave="this.classList.remove('drag-over')"
+           ondrop="handleFotoDrop(event)">
+        <input type="file" id="r-foto-input" accept="image/*" capture="environment"
+               onchange="handleFotoSelect(this.files[0])"/>
+        <div class="foto-upload-icon">📷</div>
+        <div class="foto-upload-text">Toca aquí para hacer foto o adjuntar imagen</div>
+        <div class="foto-upload-sub">JPG / PNG · Se comprime automáticamente</div>
+      </div>
+      <div class="foto-preview-wrap" id="foto-preview-wrap">
+        <img id="foto-preview-img" src="" alt="Vista previa"/>
+        <div class="foto-preview-overlay">
+          <button class="foto-btn-remove" onclick="eliminarFotoSeleccionada()">✕ Quitar</button>
+        </div>
+      </div>
+      <div class="foto-progress-wrap" id="foto-progress-wrap">
+        <div class="foto-progress-bar-bg">
+          <div class="foto-progress-bar" id="foto-progress-bar"><span id="foto-progress-pct">0%</span></div>
+        </div>
+        <div class="foto-progress-text" id="foto-progress-text">Subiendo foto…</div>
+      </div>
+    </div>
+    <div id="modal-repostaje-error" class="error-msg"></div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="cerrarModal('modal-repostaje')">Cancelar</button>
+      <button class="btn-delete" id="btn-delete-repostaje" style="display:none" onclick="borrarRepostaje()">🗑 Eliminar</button>
+      <button class="btn-save" onclick="guardarRepostaje()">💾 Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: RECARGA DEPÓSITO -->
+<div class="modal-overlay" id="modal-recarga">
+  <div class="modal">
+    <button class="modal-close" onclick="cerrarModal('modal-recarga')">✕</button>
+    <h2>🔋 Registrar Recarga de Depósito</h2>
+    <div class="grid2">
+      <div class="field">
+        <label>Fecha de recarga</label>
+        <input type="date" id="rec-fecha"/>
+      </div>
+      <div class="field">
+        <label>Litros añadidos</label>
+        <input type="number" id="rec-litros" placeholder="Ej: 1000" min="1" step="1"/>
+      </div>
+      <div class="field">
+        <label>Proveedor</label>
+        <input type="text" id="rec-proveedor" placeholder="Nombre del proveedor"/>
+      </div>
+      <div class="field">
+        <label>Precio por litro (€)</label>
+        <input type="number" id="rec-precio" placeholder="Ej: 1.25" step="0.001" min="0"/>
+      </div>
+    </div>
+    <div class="field" style="margin-top:10px">
+      <label>Notas</label>
+      <textarea id="rec-notas" placeholder="Número de albarán, observaciones..." style="min-height:50px"></textarea>
+    </div>
+    <div id="modal-recarga-error" class="error-msg"></div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="cerrarModal('modal-recarga')">Cancelar</button>
+      <button class="btn-save" onclick="guardarRecarga()">🔋 Registrar Recarga</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: USUARIO -->
+<div class="modal-overlay" id="modal-usuario">
+  <div class="modal">
+    <button class="modal-close" onclick="cerrarModal('modal-usuario')">✕</button>
+    <h2>👷 Nuevo Usuario</h2>
+    <div class="grid2">
+      <div class="field" style="grid-column:1/-1">
+        <label>Nombre completo</label>
+        <input type="text" id="u-nombre" placeholder="Nombre y apellidos"/>
+      </div>
+      <div class="field">
+        <label>Correo electrónico</label>
+        <input type="email" id="u-email" placeholder="usuario@empresa.com"/>
+      </div>
+      <div class="field">
+        <label>Contraseña</label>
+        <input type="password" id="u-pass" placeholder="Mínimo 6 caracteres"/>
+      </div>
+      <div class="field">
+        <label>Rol</label>
+        <select id="u-rol">
+          <option value="trabajador">👷 Trabajador</option>
+          <option value="admin">👑 Administrador</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Color avatar</label>
+        <select id="u-color">
+          <option value="#e65c00">🟠 Naranja</option>
+          <option value="#1565c0">🔵 Azul</option>
+          <option value="#2e7d32">🟢 Verde</option>
+          <option value="#6a1b9a">🟣 Morado</option>
+          <option value="#c62828">🔴 Rojo</option>
+          <option value="#f57f17">🟡 Amarillo</option>
+        </select>
+      </div>
+    </div>
+    <div id="modal-usuario-error" class="error-msg"></div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="cerrarModal('modal-usuario')">Cancelar</button>
+      <button class="btn-save" onclick="crearUsuario()">👷 Crear usuario</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: VEHÍCULO -->
+<div class="modal-overlay" id="modal-vehiculo">
+  <div class="modal">
+    <button class="modal-close" onclick="cerrarModal('modal-vehiculo')">✕</button>
+    <h2 id="modal-vehiculo-titulo">🚗 Nuevo Vehículo</h2>
+    <div class="grid2">
+      <div class="field">
+        <label>Nombre / Descripción</label>
+        <input type="text" id="v-nombre" placeholder="Ej: Furgoneta Taller"/>
+      </div>
+      <div class="field">
+        <label>Matrícula</label>
+        <input type="text" id="v-matricula" placeholder="Ej: 1234-ABC" style="text-transform:uppercase"/>
+      </div>
+      <div class="field">
+        <label>Tipo</label>
+        <select id="v-tipo">
+          <option value="vehiculo">🚗 Turismo</option>
+          <option value="furgoneta">🚐 Furgoneta</option>
+          <option value="camion">🚛 Camión</option>
+          <option value="maquinaria">⚙️ Maquinaria</option>
+          <option value="otro">Otro</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Asignado a</label>
+        <select id="v-asignado">
+          <option value="">— Sin asignar —</option>
+        </select>
+      </div>
+    </div>
+    <div id="modal-vehiculo-error" class="error-msg"></div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="cerrarModal('modal-vehiculo')">Cancelar</button>
+      <button class="btn-delete" id="btn-delete-vehiculo" style="display:none" onclick="borrarVehiculo()">🗑 Eliminar</button>
+      <button class="btn-save" onclick="guardarVehiculo()">💾 Guardar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ════════════════════════════════════════════════════════
+//  ⚙️  FIREBASE CONFIG — reemplaza con tus datos reales
+// ════════════════════════════════════════════════════════
+const firebaseConfig = {
+  apiKey:            "AIzaSyBdkSwUWDw7WITrwO5iLPwMXLaj3Qo7Kr4",
+  authDomain:        "app-gasoil.firebaseapp.com",
+  projectId:         "app-gasoil",
+  storageBucket:     "app-gasoil.firebasestorage.app",
+  messagingSenderId: "857319977155",
+  appId:             "1:857319977155:web:b5e11d6deef0567ad93276",
+  measurementId:     "G-ZW17CYLR1T"
+};
+
+firebase.initializeApp(firebaseConfig);
+const auth    = firebase.auth();
+const db      = firebase.firestore();
+
+// ── CLOUDINARY CONFIG ────────────────────────────────────
+const CLOUDINARY_CLOUD  = "dsrv6zdus";
+const CLOUDINARY_PRESET = "GASOIL_FOTOS";
+
+// Capturar errores globales y mostrarlos en pantalla
+window.onerror = function(msg, src, line, col, err){
+  const errEl = document.getElementById('login-error');
+  if(errEl){ errEl.textContent = 'Error JS: ' + msg + ' (linea ' + line + ')'; errEl.style.display='block'; }
+  console.error('ERROR GLOBAL:', msg, src, line);
+  return false;
+};
+
+// ════════════════════════════════════════════════════════
+//  ESTADO GLOBAL
+// ════════════════════════════════════════════════════════
+let currentUser    = null;
+let currentProfile = null;
+let registros      = [];
+let vehiculos      = [];
+let usuarios       = [];
+let recargas       = [];
+let configDeposito = { capacidad: 2000, actual: 2000, alerta: 20 };
+let vistaActual    = "dashboard";
+let paginaActual   = 1;
+const POR_PAGINA   = 25;
+let sortCol        = "fecha";
+let sortAsc        = false;
+let editandoRepostaje = null;
+let editandoVehiculo  = null;
+let chartsInstancias  = {};
+let fotoFileSeleccionada = null;   // File object pendiente de subir
+let fotoUrlExistente     = null;   // URL ya guardada (edición)
+let modoSeleccion        = false;  // Modo selección múltiple activo
+let idsSeleccionados     = new Set(); // IDs de repostajes seleccionados
+
+// ════════════════════════════════════════════════════════
+//  TOAST
+// ════════════════════════════════════════════════════════
+function toast(msg, color="#e65c00"){
+  const t = document.getElementById("toast");
+  t.textContent = msg;
+  t.style.background = color;
+  t.classList.add("show");
+  setTimeout(()=>t.classList.remove("show"), 3200);
+}
+
+// ════════════════════════════════════════════════════════
+//  AUTH — SETUP INICIAL
+// ════════════════════════════════════════════════════════
+auth.onAuthStateChanged(async user=>{
+  try{
+    if(user){
+      currentUser = user;
+      let profile = { nombre: user.email, rol: 'admin', color: '#e65c00' };
+      try{
+        const doc = await db.collection('usuarios').doc(user.uid).get();
+        if(doc.exists){
+          profile = doc.data();
+        } else {
+          const nombreAuto = user.displayName || user.email.split('@')[0];
+          profile = { nombre: nombreAuto, email: user.email, rol: 'admin', color: '#e65c00' };
+          await db.collection('usuarios').doc(user.uid).set({
+            nombre: profile.nombre, email: profile.email, rol: 'admin', color: '#e65c00',
+            creadoEn: firebase.firestore.FieldValue.serverTimestamp()
+          });
+          try{
+            const cfgSnap = await db.collection('config').doc('deposito').get();
+            if(!cfgSnap.exists){
+              await db.collection('config').doc('deposito').set({ capacidad:2000, actual:2000, alerta:20 });
+            }
+          }catch(_){}
+        }
+      }catch(e){
+        console.warn('No se pudo leer perfil Firestore:', e);
+      }
+      currentProfile = profile;
+
+      const loginEl  = document.getElementById('login-screen');
+      const setupEl  = document.getElementById('setup-screen');
+      const appEl    = document.getElementById('app');
+      if(loginEl) loginEl.style.display = 'none';
+      if(setupEl) setupEl.style.display = 'none';
+      if(appEl)   appEl.style.display   = 'block';
+
+      const unEl = document.getElementById('uname');
+      const urEl = document.getElementById('urol');
+      if(unEl) unEl.textContent = currentProfile.nombre || user.email;
+      if(urEl) urEl.textContent = currentProfile.rol === 'admin' ? '👑 Admin' : '👷 Trabajador';
+
+      if(currentProfile.rol === 'admin'){
+        ['nav-admin','btn-admin-hdr','btn-recargar-dep','config-deposito-wrap','btn-modo-seleccion'].forEach(id=>{
+          const el = document.getElementById(id); if(el) el.style.display = '';
+        });
+      } else {
+        // Trabajador — ocultar secciones restringidas
+        ['nav-registros','nav-estadisticas','nav-ranking','nav-deposito','btn-admin-hdr','btn-excel-hdr'].forEach(id=>{
+          const el = document.getElementById(id); if(el) el.style.display = 'none';
+        });
+        // Ocultar el deposito visual del header
+        const depWrap = document.getElementById('deposito-hdr-wrap');
+        if(depWrap) depWrap.style.display = 'none';
+        const nivelBadge = document.getElementById('nivel-badge');
+        if(nivelBadge) nivelBadge.style.display = 'none';
+        // Redirigir a dashboard (vista permitida)
+        vistaActual = 'dashboard';
+      }
+      iniciarApp();
+
+    } else {
+      currentUser = null; currentProfile = null;
+      registros=[]; vehiculos=[]; usuarios=[]; recargas=[];
+      Object.values(chartsInstancias).forEach(c=>{ try{c.destroy();}catch(_){} });
+      chartsInstancias = {};
+      const appEl   = document.getElementById('app');
+      const loginEl = document.getElementById('login-screen');
+      const setupEl = document.getElementById('setup-screen');
+      if(appEl)   appEl.style.display   = 'none';
+      // Check if any users exist to decide: show setup or login
+      try{
+        const usersSnap = await db.collection('usuarios').limit(1).get();
+        if(usersSnap.empty){
+          if(setupEl) setupEl.style.display = 'flex';
+          if(loginEl) loginEl.style.display = 'none';
+        } else {
+          if(setupEl) setupEl.style.display = 'none';
+          if(loginEl) loginEl.style.display = 'flex';
+        }
+      }catch(_){
+        if(setupEl) setupEl.style.display = 'none';
+        if(loginEl) loginEl.style.display = 'flex';
+      }
+      const btn = document.getElementById('btn-login');
+      if(btn){ btn.textContent = '⛽ Entrar'; btn.disabled = false; }
+    }
+  }catch(e){
+    console.error('Error en auth:', e);
+    const errEl = document.getElementById('login-error');
+    if(errEl){ errEl.textContent = '❌ Error: ' + e.message; errEl.style.display = 'block'; }
+    const btn = document.getElementById('btn-login');
+    if(btn){ btn.textContent = '⛽ Entrar'; btn.disabled = false; }
+    const appEl   = document.getElementById('app');
+    const loginEl = document.getElementById('login-screen');
+    if(appEl)   appEl.style.display   = 'none';
+    if(loginEl) loginEl.style.display = 'flex';
+  }
+});
+
+// ════════════════════════════════════════════════════════
+//  CREAR ADMIN (setup inicial)
+// ════════════════════════════════════════════════════════
+window.crearAdmin = async function crearAdmin(){
+  const nombre = document.getElementById('setup-nombre').value.trim();
+  const email  = document.getElementById('setup-email').value.trim();
+  const pass   = document.getElementById('setup-pass').value;
+  const err    = document.getElementById('setup-error');
+  err.style.display='none';
+  if(!nombre||!email||!pass){ err.textContent='Rellena todos los campos'; err.style.display='block'; return; }
+  if(pass.length<6){ err.textContent='La contraseña debe tener al menos 6 caracteres'; err.style.display='block'; return; }
+  try{
+    const cred = await auth.createUserWithEmailAndPassword(email, pass);
+    await db.collection('usuarios').doc(cred.user.uid).set({
+      nombre, email, rol:'admin', color:'#e65c00',
+      creadoEn: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    await db.collection('config').doc('deposito').set({ capacidad:2000, actual:2000, alerta:20 });
+  }catch(e){
+    const msgs={'auth/email-already-in-use':'Ese correo ya tiene una cuenta.','auth/invalid-email':'Formato de correo no válido.','auth/weak-password':'Contraseña demasiado débil (mín. 6 caracteres).'};
+    err.textContent = msgs[e.code]||('Error: '+e.message);
+    err.style.display='block';
+  }
+}
+
+window.doLogin = async function doLogin(){
+  const email = document.getElementById('login-email').value.trim();
+  const pass  = document.getElementById('login-pass').value;
+  const err   = document.getElementById('login-error');
+  const btn   = document.getElementById('btn-login');
+  err.style.display = 'none';
+  if(!email||!pass){ err.textContent='Introduce correo y contraseña'; err.style.display='block'; return; }
+  btn.textContent = 'Verificando...'; btn.disabled = true;
+  try{
+    await auth.signInWithEmailAndPassword(email, pass);
+  }catch(e){
+    btn.textContent = '⛽ Entrar'; btn.disabled = false;
+    const msgs = {
+      'auth/user-not-found':         'Correo o contraseña incorrectos.',
+      'auth/wrong-password':         'Correo o contraseña incorrectos.',
+      'auth/invalid-credential':     'Correo o contraseña incorrectos.',
+      'auth/invalid-email':          'Formato de correo no válido.',
+      'auth/too-many-requests':      'Cuenta bloqueada temporalmente. Inténtalo en unos minutos.',
+      'auth/network-request-failed': 'Sin conexión a internet.',
+      'auth/user-disabled':          'Esta cuenta ha sido desactivada.'
+    };
+    err.textContent = msgs[e.code] || ('Error: ' + e.message);
+    err.style.display = 'block';
+  }
+}
+
+async function doLogout(){
+  try{
+    registros=[]; vehiculos=[]; usuarios=[]; recargas=[];
+    Object.values(chartsInstancias).forEach(c=>{ try{c.destroy();}catch(_){} });
+    chartsInstancias = {};
+    currentUser = null; currentProfile = null;
+    await auth.signOut();
+  }catch(e){ console.error(e); }
+}
+
+function _firebaseErr(e){
+  const map={"auth/user-not-found":"Usuario no encontrado","auth/wrong-password":"Contraseña incorrecta","auth/email-already-in-use":"Ese correo ya está en uso","auth/invalid-email":"Correo no válido","auth/weak-password":"Contraseña demasiado débil"};
+  return map[e.code]||e.message;
+}
+
+// ════════════════════════════════════════════════════════
+//  INICIAR APP — carga de datos en tiempo real
+// ════════════════════════════════════════════════════════
+function iniciarApp(){
+  // Config depósito
+  db.collection("config").doc("deposito").onSnapshot(snap=>{
+    if(snap.exists) configDeposito = snap.data();
+    actualizarDeposito();
+    if(document.getElementById("dep-capacidad-inp")){
+      document.getElementById("dep-capacidad-inp").value = configDeposito.capacidad||"";
+      document.getElementById("dep-actual-inp").value    = configDeposito.actual||"";
+      document.getElementById("dep-alerta-inp").value    = configDeposito.alerta||20;
+    }
+  });
+
+  // Registros (repostajes)
+  db.collection("repostajes").orderBy("fecha","desc").onSnapshot(snap=>{
+    registros = snap.docs.map(d=>({id:d.id,...d.data()}));
+    renderTodo();
+  });
+
+  // Vehículos
+  db.collection("vehiculos").onSnapshot(snap=>{
+    vehiculos = snap.docs.map(d=>({id:d.id,...d.data()}));
+    poblarSelectVehiculos();
+    renderAdminVehiculos();
+  });
+
+  // Usuarios
+  db.collection("usuarios").onSnapshot(snap=>{
+    usuarios = snap.docs.map(d=>({id:d.id,...d.data()}));
+    poblarSelectTrabajadores();
+    renderAdminUsuarios();
+  });
+
+  // Recargas
+  db.collection("recargas").orderBy("fecha","desc").onSnapshot(snap=>{
+    recargas = snap.docs.map(d=>({id:d.id,...d.data()}));
+    renderRecargasList();
+    renderChartDepositoNivel();
+  });
+}
+
+function renderTodo(){
+  renderStats();
+  renderRegistros();
+  renderRanking();
+  renderCharts();
+}
+
+// ════════════════════════════════════════════════════════
+//  DEPÓSITO VISUAL
+// ════════════════════════════════════════════════════════
+function actualizarDeposito(){
+  const cap = configDeposito.capacidad || 2000;
+  const act = configDeposito.actual    || 0;
+  const alerta = configDeposito.alerta || 20;
+  const pct = Math.min(100, Math.max(0, Math.round((act/cap)*100)));
+
+  // Header badge
+  const badge = document.getElementById("nivel-badge");
+  document.getElementById("nivel-pct-hdr").textContent = pct + "%";
+  badge.className = "nivel-badge " + (pct<=10?"nivel-crit":pct<=alerta?"nivel-warn":"nivel-ok");
+
+  // Tank visual
+  ["dep-fill-hdr"].forEach(id=>{
+    const el = document.getElementById(id);
+    if(el) el.style.height = pct + "%";
+  });
+  const pctEl = document.getElementById("dep-pct-hdr");
+  if(pctEl) pctEl.textContent = pct+"%";
+
+  // Bar
+  const bar = document.getElementById("dep-bar-hdr");
+  if(bar){
+    bar.style.width = pct + "%";
+    bar.style.background = pct<=10?"linear-gradient(90deg,#c62828,#b71c1c)":
+                           pct<=alerta?"linear-gradient(90deg,#f57f17,#e65c00)":
+                           "linear-gradient(90deg,var(--accent2),var(--accent))";
+    const lbl = document.getElementById("dep-bar-lbl-hdr");
+    if(lbl) lbl.textContent = pct > 15 ? act.toLocaleString("es-ES")+" L ("+pct+"%)" : "";
+  }
+
+  const datos = document.getElementById("dep-datos-hdr");
+  if(datos) datos.innerHTML = `
+    <span class="deposito-dato">🛢️ Actual: <strong>${act.toLocaleString("es-ES")} L</strong></span>
+    <span class="deposito-dato">📦 Capacidad: <strong>${cap.toLocaleString("es-ES")} L</strong></span>
+    <span class="deposito-dato">📉 Libre: <strong>${(cap-act).toLocaleString("es-ES")} L</strong></span>
+    ${pct<=alerta?`<span class="deposito-dato" style="color:var(--red);font-weight:700">⚠️ Nivel bajo — reponer</span>`:""}
+  `;
+}
+
+// ════════════════════════════════════════════════════════
+//  STATS
+// ════════════════════════════════════════════════════════
+function renderStats(){
+  const hoy = new Date();
+  const mesActual = hoy.getMonth();
+  const anioActual = hoy.getFullYear();
+  const primerDiaMes = new Date(anioActual, mesActual, 1);
+
+  const litrosMes = registros.filter(r=>_tsToDate(r.fecha)>=primerDiaMes).reduce((s,r)=>s+(r.litros||0),0);
+  const litrosTotal = registros.reduce((s,r)=>s+(r.litros||0),0);
+  const regMes = registros.filter(r=>_tsToDate(r.fecha)>=primerDiaMes).length;
+  const trabajadoresActivos = [...new Set(registros.filter(r=>_tsToDate(r.fecha)>=primerDiaMes).map(r=>r.trabajadorUid))].length;
+  const cap = configDeposito.capacidad||2000;
+  const act = configDeposito.actual||0;
+  const pct = Math.min(100,Math.round((act/cap)*100));
+
+  const html = `
+    <div class="stat-card clickable" onclick="setVista('deposito')">
+      <div class="icon">🛢️</div>
+      <div class="stat-val ${pct<=20?"accent":pct<=40?"":"green"}">${pct}%</div>
+      <div class="stat-lbl">Nivel depósito</div>
+      <div class="stat-sub">${(act).toLocaleString("es-ES")} L de ${(cap).toLocaleString("es-ES")} L</div>
+    </div>
+    <div class="stat-card clickable" onclick="setVista('registros')">
+      <div class="icon">📅</div>
+      <div class="stat-val accent">${litrosMes.toLocaleString("es-ES",{maximumFractionDigits:1})}</div>
+      <div class="stat-lbl">Litros este mes</div>
+      <div class="stat-sub">${regMes} repostajes registrados</div>
+    </div>
+    <div class="stat-card">
+      <div class="icon">⛽</div>
+      <div class="stat-val" style="color:var(--blue)">${litrosTotal.toLocaleString("es-ES",{maximumFractionDigits:1})}</div>
+      <div class="stat-lbl">Total histórico (L)</div>
+      <div class="stat-sub">${registros.length} repostajes en total</div>
+    </div>
+    <div class="stat-card clickable" onclick="setVista('ranking')">
+      <div class="icon">👷</div>
+      <div class="stat-val green">${trabajadoresActivos}</div>
+      <div class="stat-lbl">Trabajadores activos</div>
+      <div class="stat-sub">Con repostaje este mes</div>
+    </div>
+  `;
+  document.getElementById("stats-row").innerHTML = html;
+  const dash = document.getElementById("stats-row-dash");
+  if(dash) dash.innerHTML = html;
+}
+
+// ════════════════════════════════════════════════════════
+//  REGISTROS TABLE
+// ════════════════════════════════════════════════════════
+function renderRegistros(){
+  let data = [...registros];
+
+  // Filtros
+  const busq = (document.getElementById("busqueda")||{}).value?.toLowerCase()||"";
+  const fTrab = (document.getElementById("f-trabajador")||{}).value||"";
+  const fVeh  = (document.getElementById("f-vehiculo")||{}).value||"";
+  const fMes  = (document.getElementById("f-mes")||{}).value||"";
+
+  if(busq) data = data.filter(r=>(r.trabajadorNombre||"").toLowerCase().includes(busq)||(r.vehiculo||"").toLowerCase().includes(busq)||(r.notas||"").toLowerCase().includes(busq));
+  if(fTrab) data = data.filter(r=>r.trabajadorUid===fTrab);
+  if(fVeh)  data = data.filter(r=>(r.vehiculo||"")=== fVeh);
+  if(fMes)  data = data.filter(r=>{ const d=_tsToDate(r.fecha); return d.getFullYear()+"-"+(d.getMonth()+1).toString().padStart(2,"0") === fMes; });
+
+  // Sort
+  data.sort((a,b)=>{
+    let va=a[sortCol], vb=b[sortCol];
+    if(sortCol==="fecha"){ va=_tsToDate(va).getTime(); vb=_tsToDate(vb).getTime(); }
+    if(sortCol==="litros"){ va=parseFloat(va)||0; vb=parseFloat(vb)||0; }
+    if(typeof va==="string") va=va.toLowerCase();
+    if(typeof vb==="string") vb=vb.toLowerCase();
+    return sortAsc ? (va>vb?1:-1) : (va<vb?1:-1);
+  });
+
+  // Paginación
+  const total = data.length;
+  const totalPag = Math.max(1, Math.ceil(total/POR_PAGINA));
+  if(paginaActual>totalPag) paginaActual=1;
+  const start = (paginaActual-1)*POR_PAGINA;
+  const pageData = data.slice(start, start+POR_PAGINA);
+
+  // Render
+  const tbody = document.getElementById("tbody-registros");
+  if(!tbody) return;
+  if(!pageData.length){
+    tbody.innerHTML=`<tr class="empty-row"><td colspan="${modoSeleccion?9:8}">⛽ No hay repostajes registrados aún</td></tr>`;
+  } else {
+    tbody.innerHTML = pageData.map(r=>{
+      const fecha = _fmtFecha(r.fecha);
+      const litros = (r.litros||0).toLocaleString("es-ES",{maximumFractionDigits:1});
+      const odometro = r.odometro ? r.odometro.toLocaleString("es-ES") : "—";
+      const esPropio = r.trabajadorUid === currentUser?.uid;
+      const canEdit  = currentProfile?.rol==="admin"||esPropio;
+      const seleccionada = idsSeleccionados.has(r.id);
+      const cbCol = modoSeleccion ? `<td onclick="event.stopPropagation()"><input type="checkbox" class="cb-fila" ${seleccionada?"checked":""} onchange="toggleSeleccionFila('${r.id}',this.checked)"></td>` : "";
+      return `<tr style="--ec:${r.color||"var(--accent)"}" class="${seleccionada?"seleccionada":""}" onclick="${modoSeleccion?`toggleSeleccionFila('${r.id}',!document.querySelector('[data-id=\\'${r.id}\\']')?.checked)`:canEdit?`editarRepostaje('${r.id}')`:""}" data-id="${r.id}" title="${modoSeleccion?"Seleccionar/deseleccionar":canEdit?"Editar repostaje":""}">
+        ${cbCol}
+        <td><span style="font-family:'DM Mono',monospace;font-size:11px">${fecha}</span></td>
+        <td>
+          <div style="display:flex;align-items:center;gap:8px">
+            <div style="width:26px;height:26px;border-radius:50%;background:${r.color||"#e65c00"};display:flex;align-items:center;justify-content:center;color:white;font-size:10px;font-weight:800;flex-shrink:0">${(r.trabajadorNombre||"?")[0].toUpperCase()}</div>
+            <span style="font-weight:600">${_esc(r.trabajadorNombre||"—")}</span>
+          </div>
+        </td>
+        <td>
+          <span>${_esc(r.vehiculo||"—")}</span>
+        </td>
+        <td><strong style="color:var(--accent);font-size:14px">${litros}</strong> <span style="color:var(--text3);font-size:11px">L</span></td>
+        <td style="color:var(--text3)">${odometro}</td>
+        <td style="color:var(--text3);max-width:160px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${_esc(r.notas||"")}">${_esc(r.notas||"—")}</td>
+        <td onclick="event.stopPropagation()">${r.fotoUrl
+          ? `<img class="foto-thumb" src="${r.fotoUrl}" alt="Foto contador" title="Ver foto del contador" onclick="abrirLightbox('${r.fotoUrl}','${_esc(r.trabajadorNombre||'')} · ${_fmtFechaCorta(r.fecha)}')">`
+          : `<span style="color:var(--text3);font-size:18px" title="Sin foto">—</span>`
+        }</td>
+        <td>${!modoSeleccion&&canEdit?`<span style="font-size:16px;cursor:pointer" onclick="event.stopPropagation();editarRepostaje('${r.id}')">✏️</span>`:""}</td>
+      </tr>`;
+    }).join("");
+  }
+
+  // Paginación info
+  const info = document.getElementById("pag-info");
+  if(info) info.textContent = total ? `${start+1}–${Math.min(start+POR_PAGINA,total)} de ${total} registros` : "";
+  renderPaginacion(totalPag);
+  poblarFiltrosMes(data);
+}
+
+function renderPaginacion(totalPag){
+  const wrap = document.getElementById("pag-btns");
+  if(!wrap) return;
+  let html = `<button ${paginaActual<=1?"disabled":""} onclick="paginaActual--;renderRegistros()">‹</button>`;
+  for(let i=1;i<=Math.min(totalPag,7);i++){
+    html+=`<button class="${i===paginaActual?"active":""}" onclick="paginaActual=${i};renderRegistros()">${i}</button>`;
+  }
+  if(totalPag>7) html+=`<button disabled>…</button><button onclick="paginaActual=${totalPag};renderRegistros()">${totalPag}</button>`;
+  html+=`<button ${paginaActual>=totalPag?"disabled":""} onclick="paginaActual++;renderRegistros()">›</button>`;
+  wrap.innerHTML = html;
+}
+
+function sortBy(col){ if(sortCol===col) sortAsc=!sortAsc; else{sortCol=col;sortAsc=true;} renderRegistros(); }
+
+function limpiarFiltros(){
+  ["busqueda","f-trabajador","f-vehiculo","f-mes"].forEach(id=>{ const el=document.getElementById(id); if(el)el.value=""; });
+  paginaActual=1; renderRegistros();
+}
+
+function poblarFiltrosMes(){
+  const meses = [...new Set(registros.map(r=>{ const d=_tsToDate(r.fecha); return d.getFullYear()+"-"+(d.getMonth()+1).toString().padStart(2,"0"); }))].sort().reverse();
+  const sel = document.getElementById("f-mes"); if(!sel) return;
+  const cur = sel.value;
+  sel.innerHTML = `<option value="">📅 Todos los meses</option>` + meses.map(m=>`<option value="${m}" ${m===cur?"selected":""}>${_fmtMes(m)}</option>`).join("");
+}
+
+function poblarSelectTrabajadores(){
+  const sel1 = document.getElementById("f-trabajador");
+  const sel2 = document.getElementById("r-trabajador");
+  const sel3 = document.getElementById("v-asignado");
+  const opts = usuarios.map(u=>`<option value="${u.id}">${u.nombre}</option>`).join("");
+  if(sel1){ const c=sel1.value; sel1.innerHTML=`<option value="">👷 Todos</option>`+opts; sel1.value=c; }
+  if(sel2){
+    const esAdmin = currentProfile?.rol==="admin";
+    if(esAdmin){
+      sel2.innerHTML=`<option value="">— Seleccionar trabajador —</option>`+opts;
+    } else {
+      // Trabajador solo puede seleccionarse a sí mismo
+      sel2.innerHTML=`<option value="${currentUser?.uid}">${currentProfile?.nombre||''}</option>`;
+      sel2.disabled = true;
+    }
+  }
+  if(sel3) sel3.innerHTML=`<option value="">— Sin asignar —</option>`+opts;
+}
+
+function poblarSelectVehiculos(){
+  // Lista fija de vehículos de empresa
+  const listaFija = [
+    {nombre:"VEHICULO PERSONAL", icono:"🚗"},
+    {nombre:"SEAT LEON", icono:"🚗"},
+    {nombre:"SKODA", icono:"🚗"},
+    {nombre:"FURGONETA VOLKSWAGEN", icono:"🚐"},
+    {nombre:"FURGONETA FORD", icono:"🚐"},
+    {nombre:"FURGONETA RENAULT", icono:"🚐"},
+    {nombre:"FURGONETA CITROEN", icono:"🚐"}
+  ];
+  const iconosTipo = {"vehiculo":"🚗","furgoneta":"🚐","camion":"🚛","maquinaria":"⚙️","otro":"🔧"};
+
+  // Construir lista combinada: fijos primero, luego los de Firebase que no estén ya
+  const nombresFijos = listaFija.map(v=>v.nombre.toUpperCase());
+  const vehiculosFirebase = vehiculos.filter(v=>!nombresFijos.includes((v.nombre||"").toUpperCase()));
+
+  let opts = listaFija.map(v=>`<option value="${v.nombre}">${v.icono} ${v.nombre}</option>`).join("");
+  if(vehiculosFirebase.length){
+    opts += `<optgroup label="— Vehículos registrados —">`;
+    opts += vehiculosFirebase.map(v=>`<option value="${v.nombre}">${iconosTipo[v.tipo]||"🚗"} ${v.nombre}${v.matricula?" ("+v.matricula+")":""}</option>`).join("");
+    opts += `</optgroup>`;
+  }
+
+  const sel1 = document.getElementById("r-vehiculo");
+  const sel2 = document.getElementById("f-vehiculo");
+  if(sel1){ const c=sel1.value; sel1.innerHTML=`<option value="">— Seleccionar vehículo —</option>`+opts; sel1.value=c; }
+  if(sel2){ const c=sel2.value; sel2.innerHTML=`<option value="">🚗 Todos los vehículos</option>`+opts; sel2.value=c; }
+}
+
+// ════════════════════════════════════════════════════════
+//  CHARTS
+// ════════════════════════════════════════════════════════
+function renderCharts(){
+  _destroyChart("chart-dias");
+  _destroyChart("chart-trabajadores");
+  _destroyChart("chart-mensual");
+  _destroyChart("chart-vehiculos");
+  _destroyChart("chart-evolucion");
+  renderChartDias();
+  renderChartTrabajadores();
+  renderChartMensual();
+  renderChartVehiculos();
+  renderChartEvolucion();
+}
+
+function _destroyChart(id){
+  if(chartsInstancias[id]){
+    try{ chartsInstancias[id].destroy(); }catch(_){}
+    delete chartsInstancias[id];
+  }
+  // Also unregister from Chart.js registry to prevent "Canvas already in use" errors
+  const canvas = document.getElementById(id);
+  if(canvas){ const existing = Chart.getChart(canvas); if(existing) existing.destroy(); }
+}
+
+function renderChartDias(){
+  const ctx = document.getElementById("chart-dias"); if(!ctx) return;
+  const hoy = new Date();
+  const dias = [];
+  for(let i=29;i>=0;i--){ const d=new Date(hoy); d.setDate(d.getDate()-i); dias.push(d); }
+  const labels = dias.map(d=>d.getDate()+"/"+(d.getMonth()+1));
+  const data = dias.map(d=>{
+    const dStr = d.toISOString().substring(0,10);
+    return registros.filter(r=>{const rd=_tsToDate(r.fecha); return rd.toISOString().substring(0,10)===dStr;}).reduce((s,r)=>s+(r.litros||0),0);
+  });
+  chartsInstancias["chart-dias"] = new Chart(ctx,{type:"bar",data:{labels,datasets:[{label:"Litros",data,backgroundColor:"rgba(230,92,0,.7)",borderColor:"#e65c00",borderWidth:1,borderRadius:3}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,grid:{color:"rgba(0,0,0,.05)"},ticks:{font:{size:10}}},x:{grid:{display:false},ticks:{maxTicksLimit:10,font:{size:10}}}}}});
+}
+
+function renderChartTrabajadores(){
+  const ctx = document.getElementById("chart-trabajadores"); if(!ctx) return;
+  const hoy=new Date(); const primerDia=new Date(hoy.getFullYear(),hoy.getMonth(),1);
+  const tMap={};
+  registros.filter(r=>_tsToDate(r.fecha)>=primerDia).forEach(r=>{ tMap[r.trabajadorNombre||"?"]=( tMap[r.trabajadorNombre||"?"]||0)+(r.litros||0); });
+  const sorted=Object.entries(tMap).sort((a,b)=>b[1]-a[1]).slice(0,8);
+  const colors=["#e65c00","#f57c00","#ff8f00","#ffa000","#ffb300","#1565c0","#2e7d32","#6a1b9a"];
+  chartsInstancias["chart-trabajadores"]=new Chart(ctx,{type:"doughnut",data:{labels:sorted.map(x=>x[0]),datasets:[{data:sorted.map(x=>x[1]),backgroundColor:colors,borderWidth:2,borderColor:"white"}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:"right",labels:{font:{size:11},boxWidth:14}}}}});
+}
+
+function renderChartMensual(){
+  const ctx = document.getElementById("chart-mensual"); if(!ctx) return;
+  const anio = new Date().getFullYear();
+  const meses=["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
+  const data=meses.map((_,i)=>registros.filter(r=>{ const d=_tsToDate(r.fecha); return d.getFullYear()===anio && d.getMonth()===i; }).reduce((s,r)=>s+(r.litros||0),0));
+  chartsInstancias["chart-mensual"]=new Chart(ctx,{type:"bar",data:{labels:meses,datasets:[{label:"Litros",data,backgroundColor:data.map((_,i)=>i===new Date().getMonth()?"rgba(230,92,0,.9)":"rgba(230,92,0,.45)"),borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,grid:{color:"rgba(0,0,0,.05)"},ticks:{font:{size:10}}},x:{grid:{display:false},ticks:{font:{size:11}}}}}});
+}
+
+function renderChartVehiculos(){
+  const ctx = document.getElementById("chart-vehiculos"); if(!ctx) return;
+  const vMap={};
+  registros.forEach(r=>{ const k=r.vehiculo||"Sin vehículo"; vMap[k]=(vMap[k]||0)+(r.litros||0); });
+  const sorted=Object.entries(vMap).sort((a,b)=>b[1]-a[1]).slice(0,8);
+  const colors=["#e65c00","#1565c0","#2e7d32","#6a1b9a","#c62828","#f57f17","#00838f","#4e342e"];
+  chartsInstancias["chart-vehiculos"]=new Chart(ctx,{type:"pie",data:{labels:sorted.map(x=>x[0]),datasets:[{data:sorted.map(x=>x[1]),backgroundColor:colors,borderWidth:2,borderColor:"white"}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:"right",labels:{font:{size:11},boxWidth:14}}}}});
+}
+
+function renderChartEvolucion(){
+  const ctx = document.getElementById("chart-evolucion"); if(!ctx) return;
+  const hoy=new Date(); const dias=[];
+  for(let i=89;i>=0;i--){ const d=new Date(hoy); d.setDate(d.getDate()-i); dias.push(d); }
+  const labels=dias.map(d=>d.getDate()+"/"+(d.getMonth()+1));
+  const data=dias.map(d=>{ const dStr=d.toISOString().substring(0,10); return registros.filter(r=>_tsToDate(r.fecha).toISOString().substring(0,10)===dStr).reduce((s,r)=>s+(r.litros||0),0); });
+  chartsInstancias["chart-evolucion"]=new Chart(ctx,{type:"line",data:{labels,datasets:[{label:"Litros/día",data,borderColor:"#e65c00",backgroundColor:"rgba(230,92,0,.08)",borderWidth:2,fill:true,tension:.3,pointRadius:0,pointHoverRadius:4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,grid:{color:"rgba(0,0,0,.05)"},ticks:{font:{size:10}}},x:{grid:{display:false},ticks:{maxTicksLimit:12,font:{size:9}}}}}});
+}
+
+function renderChartDepositoNivel(){
+  _destroyChart("chart-deposito-nivel");
+  const ctx = document.getElementById("chart-deposito-nivel"); if(!ctx) return;
+  // Simular histórico con recargas y consumo
+  const eventos = [
+    ...recargas.map(r=>({fecha:_tsToDate(r.fecha),tipo:"recarga",valor:r.litros||0})),
+    ...registros.map(r=>({fecha:_tsToDate(r.fecha),tipo:"consumo",valor:-(r.litros||0)}))
+  ].sort((a,b)=>a.fecha-b.fecha);
+
+  if(!eventos.length){
+    const cap=configDeposito.capacidad||2000;
+    chartsInstancias["chart-deposito-nivel"]=new Chart(ctx,{type:"line",data:{labels:["Hoy"],datasets:[{label:"Litros",data:[cap],borderColor:"#e65c00",backgroundColor:"rgba(230,92,0,.08)",borderWidth:2,fill:true,tension:.3}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:false,min:0,max:cap},x:{grid:{display:false}}}}});
+    return;
+  }
+
+  // Calcular nivel acumulado (inverso desde actual)
+  let nivelActual = configDeposito.actual||0;
+  const puntosRev = [{fecha:"Hoy",nivel:nivelActual}];
+  const evRev = [...eventos].reverse();
+  for(const ev of evRev){
+    if(ev.tipo==="recarga") nivelActual-=ev.valor;
+    else nivelActual+=Math.abs(ev.valor);
+    nivelActual = Math.max(0,Math.min(configDeposito.capacidad||2000, nivelActual));
+    puntosRev.push({fecha:ev.fecha.toLocaleDateString("es-ES"),nivel:Math.round(nivelActual)});
+  }
+  const puntos = puntosRev.reverse().slice(0,30);
+  chartsInstancias["chart-deposito-nivel"]=new Chart(ctx,{type:"line",data:{labels:puntos.map(p=>p.fecha),datasets:[{label:"Litros en depósito",data:puntos.map(p=>p.nivel),borderColor:"#e65c00",backgroundColor:"rgba(230,92,0,.1)",borderWidth:2.5,fill:true,tension:.4,pointRadius:3}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:false,min:0,max:configDeposito.capacidad||2000,grid:{color:"rgba(0,0,0,.05)"},ticks:{font:{size:10}}},x:{grid:{display:false},ticks:{maxTicksLimit:8,font:{size:9}}}}}});
+}
+
+// ════════════════════════════════════════════════════════
+//  RANKING
+// ════════════════════════════════════════════════════════
+function renderRanking(){
+  const periodo = (document.getElementById("f-ranking-periodo")||{}).value||"mes";
+  const hoy=new Date();
+  let desde;
+  if(periodo==="mes") desde=new Date(hoy.getFullYear(),hoy.getMonth(),1);
+  else if(periodo==="anio") desde=new Date(hoy.getFullYear(),0,1);
+  else desde=new Date(0);
+
+  const tMap={};
+  registros.filter(r=>_tsToDate(r.fecha)>=desde).forEach(r=>{
+    const k=r.trabajadorNombre||"?";
+    if(!tMap[k]) tMap[k]={nombre:k,litros:0,n:0,color:r.color||"#e65c00"};
+    tMap[k].litros+=(r.litros||0);
+    tMap[k].n++;
+  });
+  const sorted=Object.values(tMap).sort((a,b)=>b.litros-a.litros);
+  const maxL = sorted[0]?.litros||1;
+
+  const wrap=document.getElementById("ranking-list"); if(!wrap) return;
+  if(!sorted.length){ wrap.innerHTML=`<div style="text-align:center;color:var(--text3);padding:32px;font-style:italic">No hay datos para el periodo seleccionado</div>`; return; }
+  wrap.innerHTML = sorted.map((t,i)=>{
+    const posClass = i===0?"gold":i===1?"silver":i===2?"bronze":"";
+    const pct = Math.round((t.litros/maxL)*100);
+    return `<div class="rank-item">
+      <div class="rank-pos ${posClass}">${i+1}</div>
+      <div style="width:36px;height:36px;border-radius:50%;background:${t.color};display:flex;align-items:center;justify-content:center;color:white;font-size:14px;font-weight:800;flex-shrink:0">${t.nombre[0].toUpperCase()}</div>
+      <div class="rank-nombre">${_esc(t.nombre)}<br><span style="font-size:11px;color:var(--text3);font-weight:400">${t.n} repostaje${t.n!==1?"s":""}</span></div>
+      <div class="rank-bar-wrap"><div class="rank-bar" style="width:${pct}%"></div></div>
+      <div class="rank-litros">${t.litros.toLocaleString("es-ES",{maximumFractionDigits:1})} L</div>
+    </div>`;
+  }).join("");
+}
+
+// ════════════════════════════════════════════════════════
+//  RECARGAS LIST
+// ════════════════════════════════════════════════════════
+function renderRecargasList(){
+  const wrap=document.getElementById("recargas-list"); if(!wrap) return;
+  if(!recargas.length){ wrap.innerHTML=`<div style="color:var(--text3);font-size:12px;font-style:italic;padding:10px">Sin recargas registradas</div>`; return; }
+  wrap.innerHTML = recargas.slice(0,15).map(r=>{
+    const precio = r.precio ? (r.litros*r.precio).toLocaleString("es-ES",{minimumFractionDigits:2,maximumFractionDigits:2})+" €" : "";
+    return `<div class="recarga-item">
+      <div>
+        <div style="font-size:13px;font-weight:700;color:var(--text)">🔋 Recarga</div>
+        <div class="recarga-dato">${_fmtFechaCorta(r.fecha)} · ${_esc(r.proveedor||"Sin proveedor")}</div>
+        ${precio?`<div class="recarga-dato">💶 ${precio}</div>`:""}
+      </div>
+      <div class="recarga-litros">+${(r.litros||0).toLocaleString("es-ES")} L</div>
+    </div>`;
+  }).join("");
+}
+
+// ════════════════════════════════════════════════════════
+//  ADMIN
+// ════════════════════════════════════════════════════════
+function renderAdminUsuarios(){
+  const wrap=document.getElementById("admin-usuarios-list"); if(!wrap) return;
+  wrap.innerHTML = usuarios.map(u=>{
+    const rolClr = u.rol==="admin"?"background:var(--yellow-bg);color:#f57f17":"background:var(--blue-bg);color:var(--blue)";
+    return `<div class="user-item">
+      <div class="user-avatar" style="background:${u.color||"#e65c00"}">${(u.nombre||"?")[0].toUpperCase()}</div>
+      <div class="user-info">
+        <div class="user-name">${_esc(u.nombre||"—")}</div>
+        <div class="user-email">${_esc(u.email||"—")}</div>
+      </div>
+      <span class="user-rol-badge" style="${rolClr}">${u.rol==="admin"?"👑 Admin":"👷 Trabajador"}</span>
+    </div>`;
+  }).join("");
+}
+
+function renderAdminVehiculos(){
+  const wrap=document.getElementById("admin-vehiculos-list"); if(!wrap) return;
+  const iconos={"vehiculo":"🚗","furgoneta":"🚐","camion":"🚛","maquinaria":"⚙️","otro":"🔧"};
+  if(!vehiculos.length){ wrap.innerHTML=`<div style="color:var(--text3);font-size:12px;font-style:italic;padding:10px 0">Sin vehículos registrados</div>`; return; }
+  wrap.innerHTML = vehiculos.map(v=>`
+    <div class="user-item" style="cursor:pointer" onclick="editarVehiculo('${v.id}')">
+      <div style="font-size:24px">${iconos[v.tipo]||"🔧"}</div>
+      <div class="user-info">
+        <div class="user-name">${_esc(v.nombre||"—")}</div>
+        <div class="user-email">Matrícula: ${_esc(v.matricula||"S/M")} · ${v.tipo||"otro"}</div>
+      </div>
+      <span style="background:var(--accent-light);color:var(--accent);border-radius:20px;padding:3px 10px;font-size:11px;font-weight:700">Editar ✏️</span>
+    </div>`).join("");
+}
+
+// ════════════════════════════════════════════════════════
+//  📷 SISTEMA DE FOTO — CONTADOR DEL DEPÓSITO
+// ════════════════════════════════════════════════════════
+
+/**
+ * Comprime una imagen usando Canvas antes de subirla.
+ * Reduce el lado mayor a maxPx (por defecto 1600px) y calidad JPEG a 0.82.
+ * Devuelve un Blob JPEG listo para subir.
+ */
+function comprimirImagen(file, maxPx=1600, quality=0.82){
+  return new Promise((resolve, reject)=>{
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = ()=>{
+      URL.revokeObjectURL(url);
+      let {width, height} = img;
+      if(width > maxPx || height > maxPx){
+        if(width >= height){ height = Math.round(height*(maxPx/width)); width = maxPx; }
+        else{ width = Math.round(width*(maxPx/height)); height = maxPx; }
+      }
+      const canvas = document.createElement("canvas");
+      canvas.width  = width;
+      canvas.height = height;
+      const ctx = canvas.getContext("2d");
+      ctx.drawImage(img, 0, 0, width, height);
+      canvas.toBlob(blob=>{ blob ? resolve(blob) : reject(new Error("Error al comprimir imagen")); }, "image/jpeg", quality);
+    };
+    img.onerror = ()=>{ URL.revokeObjectURL(url); reject(new Error("No se pudo leer la imagen")); };
+    img.src = url;
+  });
+}
+
+function handleFotoDrop(e){
+  e.preventDefault();
+  document.getElementById("foto-drop-zone").classList.remove("drag-over");
+  const file = e.dataTransfer.files?.[0];
+  if(file && file.type.startsWith("image/")) handleFotoSelect(file);
+  else toast("⚠️ Solo se admiten imágenes (JPG, PNG…)","#f59e0b");
+}
+
+function handleFotoSelect(file){
+  if(!file || !file.type.startsWith("image/")){ toast("⚠️ Solo se admiten imágenes","#f59e0b"); return; }
+  fotoFileSeleccionada = file;
+  // Mostrar preview inmediata con URL local
+  const reader = new FileReader();
+  reader.onload = e => mostrarPreviewFoto(e.target.result);
+  reader.readAsDataURL(file);
+}
+
+function mostrarPreviewFoto(src){
+  const wrap = document.getElementById("foto-preview-wrap");
+  const img  = document.getElementById("foto-preview-img");
+  img.src  = src;
+  wrap.style.display = "block";
+  document.getElementById("foto-drop-zone").style.display = "none";
+}
+
+function eliminarFotoSeleccionada(){
+  fotoFileSeleccionada = null;
+  fotoUrlExistente     = null;
+  document.getElementById("foto-preview-wrap").style.display = "none";
+  document.getElementById("foto-drop-zone").style.display    = "block";
+  document.getElementById("r-foto-input").value = "";
+  document.getElementById("foto-progress-wrap").style.display = "none";
+}
+
+function resetFotoUI(){
+  fotoFileSeleccionada = null;
+  fotoUrlExistente     = null;
+  document.getElementById("foto-preview-wrap").style.display  = "none";
+  document.getElementById("foto-drop-zone").style.display     = "block";
+  document.getElementById("r-foto-input").value = "";
+  document.getElementById("foto-progress-wrap").style.display = "none";
+  document.getElementById("foto-progress-bar").style.width    = "0%";
+  document.getElementById("foto-progress-pct").textContent    = "0%";
+}
+
+/**
+ * Sube la foto a Cloudinary via Upload sin firmar (Unsigned preset).
+ * Usa XMLHttpRequest para poder mostrar progreso real de subida.
+ * Devuelve la URL pública segura (https) de la imagen.
+ */
+async function subirFotoStorage(file, uid){
+  const blob = await comprimirImagen(file);
+
+  const barEl  = document.getElementById("foto-progress-bar");
+  const pctEl  = document.getElementById("foto-progress-pct");
+  const wrapEl = document.getElementById("foto-progress-wrap");
+  const textEl = document.getElementById("foto-progress-text");
+
+  wrapEl.style.display = "block";
+  barEl.style.width    = "0%";
+  pctEl.textContent    = "0%";
+  textEl.textContent   = "Comprimiendo imagen…";
+
+  const formData = new FormData();
+  formData.append("file",         blob, "contador.jpg");
+  formData.append("upload_preset", CLOUDINARY_PRESET);
+  formData.append("folder",        `contadores/${uid}`);
+
+  return new Promise((resolve, reject)=>{
+    const xhr = new XMLHttpRequest();
+    xhr.open("POST", `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD}/image/upload`);
+
+    xhr.upload.onprogress = e=>{
+      if(!e.lengthComputable) return;
+      const pct = Math.round((e.loaded / e.total) * 100);
+      barEl.style.width  = pct + "%";
+      pctEl.textContent  = pct + "%";
+      textEl.textContent = `Subiendo foto… ${pct}%`;
+    };
+
+    xhr.onload = ()=>{
+      wrapEl.style.display = "none";
+      if(xhr.status === 200){
+        const res = JSON.parse(xhr.responseText);
+        resolve(res.secure_url);
+      } else {
+        reject(new Error("Error Cloudinary: " + xhr.statusText));
+      }
+    };
+
+    xhr.onerror = ()=>{ wrapEl.style.display="none"; reject(new Error("Error de red al subir la foto")); };
+    textEl.textContent = "Subiendo foto…";
+    xhr.send(formData);
+  });
+}
+
+// ── LIGHTBOX ─────────────────────────────────────────────
+function abrirLightbox(url, info){
+  document.getElementById("lightbox-img").src = url;
+  document.getElementById("lightbox-info").textContent = info || "";
+  document.getElementById("lightbox").classList.add("open");
+  document.body.style.overflow = "hidden";
+}
+function cerrarLightbox(){
+  document.getElementById("lightbox").classList.remove("open");
+  document.getElementById("lightbox-img").src = "";
+  document.body.style.overflow = "";
+}
+// Cerrar lightbox con Escape (se añade al listener global ya existente)
+
+// ════════════════════════════════════════════════════════
+//  MODAL REPOSTAJE
+// ════════════════════════════════════════════════════════
+function abrirModalRepostaje(id){
+  editandoRepostaje = id||null;
+  const modal = document.getElementById("modal-repostaje");
+  const titulo = document.getElementById("modal-repostaje-titulo");
+  const btnDel = document.getElementById("btn-delete-repostaje");
+  const err    = document.getElementById("modal-repostaje-error");
+  err.style.display="none";
+
+  poblarSelectTrabajadores();
+  poblarSelectVehiculos();
+
+  if(id){
+    const r = registros.find(x=>x.id===id);
+    if(!r) return;
+    titulo.textContent = "✏️ Editar Repostaje";
+    btnDel.style.display = currentProfile?.rol==="admin"?"":"none";
+    document.getElementById("r-trabajador").value = r.trabajadorUid||"";
+    document.getElementById("r-fecha").value = _tsToLocalInput(r.fecha);
+    document.getElementById("r-litros").value = r.litros||"";
+    document.getElementById("r-vehiculo").value = r.vehiculo||r.vehiculoId||"";
+    document.getElementById("r-odometro").value = r.odometro||"";
+    document.getElementById("r-notas").value = r.notas||"";
+    // Cargar foto existente si la hay
+    resetFotoUI();
+    if(r.fotoUrl){
+      fotoUrlExistente = r.fotoUrl;
+      mostrarPreviewFoto(r.fotoUrl);
+    }
+  } else {
+    titulo.textContent = "⛽ Nuevo Repostaje";
+    btnDel.style.display = "none";
+    // Defaults
+    const now = new Date();
+    const tzOff = now.getTimezoneOffset()*60000;
+    document.getElementById("r-fecha").value = new Date(now-tzOff).toISOString().substring(0,16);
+    document.getElementById("r-litros").value = "";
+    document.getElementById("r-vehiculo").value = "";
+    document.getElementById("r-odometro").value = "";
+    document.getElementById("r-notas").value = "";
+    resetFotoUI();
+    // Auto-seleccionar trabajador si no es admin
+    if(currentProfile?.rol!=="admin"){
+      document.getElementById("r-trabajador").value = currentUser.uid;
+    }
+  }
+  modal.classList.add("open");
+}
+
+async function guardarRepostaje(){
+  const err = document.getElementById("modal-repostaje-error");
+  err.style.display="none";
+
+  const trabajadorUid = document.getElementById("r-trabajador").value;
+  const fechaVal      = document.getElementById("r-fecha").value;
+  const litrosVal     = parseFloat(document.getElementById("r-litros").value);
+  const vehiculoId    = document.getElementById("r-vehiculo").value;
+  const vehiculoNombre = vehiculoId || "—";
+  const odometroVal   = parseInt(document.getElementById("r-odometro").value)||null;
+  const notas         = document.getElementById("r-notas").value.trim();
+
+  if(!trabajadorUid){ err.textContent="Selecciona un trabajador"; err.style.display="block"; return; }
+  if(!fechaVal){ err.textContent="Indica la fecha"; err.style.display="block"; return; }
+  if(!litrosVal||litrosVal<=0){ err.textContent="Introduce los litros (mayor que 0)"; err.style.display="block"; return; }
+
+  // Buscar datos del trabajador
+  const trab = usuarios.find(u=>u.id===trabajadorUid);
+
+  // ── Subir foto si hay una nueva seleccionada ──────────
+  let fotoUrl = fotoUrlExistente || null;
+  if(fotoFileSeleccionada){
+    const btnSave = document.querySelector("#modal-repostaje .btn-save");
+    if(btnSave){ btnSave.disabled=true; btnSave.textContent="📷 Subiendo foto…"; }
+    try{
+      fotoUrl = await subirFotoStorage(fotoFileSeleccionada, currentUser.uid);
+    }catch(subidaErr){
+      if(btnSave){ btnSave.disabled=false; btnSave.textContent="💾 Guardar"; }
+      err.textContent = "Error al subir la foto: "+subidaErr.message;
+      err.style.display="block";
+      return;
+    }
+    if(btnSave){ btnSave.disabled=false; btnSave.textContent="💾 Guardar"; }
+  }
+
+  const data = {
+    trabajadorUid,
+    trabajadorNombre: trab?.nombre||currentProfile?.nombre||"",
+    color: trab?.color||currentProfile?.color||"#e65c00",
+    fecha: firebase.firestore.Timestamp.fromDate(new Date(fechaVal)),
+    litros: litrosVal,
+    vehiculoId: vehiculoId,
+    vehiculo: vehiculoNombre,
+    odometro: odometroVal,
+    notas,
+    fotoUrl: fotoUrl || null,
+    actualizadoEn: firebase.firestore.FieldValue.serverTimestamp(),
+    usuarioRegistro: currentUser.uid
+  };
+
+  try{
+    if(editandoRepostaje){
+      await db.collection("repostajes").doc(editandoRepostaje).update(data);
+      toast("✅ Repostaje actualizado","#2e7d32");
+    } else {
+      data.creadoEn = firebase.firestore.FieldValue.serverTimestamp();
+      await db.collection("repostajes").add(data);
+      // Descontar del depósito
+      const nuevoActual = Math.max(0,(configDeposito.actual||0)-litrosVal);
+      await db.collection("config").doc("deposito").update({ actual: nuevoActual });
+      toast("⛽ Repostaje registrado","#e65c00");
+    }
+    cerrarModal("modal-repostaje");
+    resetFotoUI();
+  }catch(e){
+    err.textContent = "Error: "+e.message; err.style.display="block";
+  }
+}
+
+async function borrarRepostaje(){
+  if(!editandoRepostaje||currentProfile?.rol!=="admin") return;
+  if(!confirm("¿Eliminar este repostaje? Esta acción no se puede deshacer.")) return;
+  const r = registros.find(x=>x.id===editandoRepostaje);
+  try{
+    await db.collection("repostajes").doc(editandoRepostaje).delete();
+    // Restaurar litros al depósito
+    if(r){ await db.collection("config").doc("deposito").update({ actual: Math.min(configDeposito.capacidad||2000,(configDeposito.actual||0)+(r.litros||0)) }); }
+    cerrarModal("modal-repostaje");
+    toast("🗑 Repostaje eliminado","#c62828");
+  }catch(e){ toast("Error: "+e.message,"#c62828"); }
+}
+
+// ════════════════════════════════════════════════════════
+//  SELECCIÓN MÚLTIPLE Y BORRADO MASIVO
+// ════════════════════════════════════════════════════════
+function toggleModoSeleccion(){
+  modoSeleccion = !modoSeleccion;
+  idsSeleccionados.clear();
+  const barra = document.getElementById("barra-seleccion");
+  const thCb  = document.getElementById("th-checkbox");
+  const cbTodo= document.getElementById("cb-seleccionar-todo");
+  if(modoSeleccion){
+    barra.classList.add("visible");
+    if(thCb) thCb.style.display="";
+    if(cbTodo) cbTodo.checked = false;
+  } else {
+    barra.classList.remove("visible");
+    if(thCb) thCb.style.display="none";
+    if(cbTodo) cbTodo.checked = false;
+  }
+  actualizarBarraSeleccion();
+  renderRegistros();
+}
+
+function toggleSeleccionFila(id, checked){
+  if(checked) idsSeleccionados.add(id);
+  else idsSeleccionados.delete(id);
+  actualizarBarraSeleccion();
+  // Actualizar estilo de la fila y el checkbox sin re-renderizar todo
+  const fila = document.querySelector(`tr[data-id="${id}"]`);
+  if(fila){
+    fila.classList.toggle("seleccionada", checked);
+    const cb = fila.querySelector(".cb-fila");
+    if(cb) cb.checked = checked;
+  }
+  // Actualizar el checkbox "seleccionar todo"
+  const cbTodo = document.getElementById("cb-seleccionar-todo");
+  if(cbTodo){
+    const visiblesIds = Array.from(document.querySelectorAll("tr[data-id]")).map(t=>t.dataset.id);
+    cbTodo.checked = visiblesIds.length > 0 && visiblesIds.every(id=>idsSeleccionados.has(id));
+    cbTodo.indeterminate = idsSeleccionados.size>0 && !cbTodo.checked;
+  }
+}
+
+function toggleSeleccionTodo(checked){
+  document.querySelectorAll("tr[data-id]").forEach(fila=>{
+    const id = fila.dataset.id;
+    if(checked){ idsSeleccionados.add(id); fila.classList.add("seleccionada"); }
+    else{ idsSeleccionados.delete(id); fila.classList.remove("seleccionada"); }
+    const cb = fila.querySelector(".cb-fila");
+    if(cb) cb.checked = checked;
+  });
+  actualizarBarraSeleccion();
+}
+
+function actualizarBarraSeleccion(){
+  const n = idsSeleccionados.size;
+  const info = document.getElementById("barra-sel-info");
+  const btnSel = document.getElementById("btn-borrar-seleccionados");
+  if(info) info.textContent = n===0 ? "Ningún repostaje seleccionado" : n===1 ? "1 repostaje seleccionado" : `${n} repostajes seleccionados`;
+  if(btnSel) btnSel.disabled = n===0;
+}
+
+async function borrarRepostajesSeleccionados(){
+  if(currentProfile?.rol!=="admin"){ toast("⚠️ Solo el administrador puede borrar registros","#c62828"); return; }
+  const ids = [...idsSeleccionados];
+  if(!ids.length){ toast("No hay repostajes seleccionados","#f59e0b"); return; }
+  if(!confirm(`¿Eliminar ${ids.length} repostaje${ids.length>1?"s":""}? Esta acción no se puede deshacer.`)) return;
+
+  // Calcular litros totales a restaurar al depósito
+  let litrosTotales = 0;
+  ids.forEach(id=>{ const r=registros.find(x=>x.id===id); if(r) litrosTotales+=(r.litros||0); });
+
+  try{
+    const batch = db.batch();
+    ids.forEach(id=>{ batch.delete(db.collection("repostajes").doc(id)); });
+    await batch.commit();
+    // Restaurar litros al depósito
+    const nuevoActual = Math.min(configDeposito.capacidad||2000,(configDeposito.actual||0)+litrosTotales);
+    await db.collection("config").doc("deposito").update({ actual: nuevoActual });
+    idsSeleccionados.clear();
+    toggleModoSeleccion();
+    toast(`🗑 ${ids.length} repostaje${ids.length>1?"s":""} eliminado${ids.length>1?"s":""}. Depósito recalculado.`,"#c62828");
+  }catch(e){ toast("Error al borrar: "+e.message,"#c62828"); }
+}
+
+async function borrarTodosLosRepostajes(){
+  if(currentProfile?.rol!=="admin"){ toast("⚠️ Solo el administrador puede borrar registros","#c62828"); return; }
+  const total = registros.length;
+  if(!total){ toast("No hay repostajes para borrar","#f59e0b"); return; }
+  if(!confirm(`⚠️ ATENCIÓN: Vas a eliminar TODOS los ${total} repostajes registrados. Esta acción es IRREVERSIBLE. ¿Continuar?`)) return;
+  if(!confirm(`Segunda confirmación: ¿Seguro que quieres borrar los ${total} repostajes? El nivel del depósito se restaurará a la capacidad máxima.`)) return;
+
+  try{
+    // Firestore batch solo soporta 500 ops → dividir si hay muchos
+    const chunks = [];
+    for(let i=0;i<registros.length;i+=400) chunks.push(registros.slice(i,i+400));
+    for(const chunk of chunks){
+      const batch = db.batch();
+      chunk.forEach(r=>{ batch.delete(db.collection("repostajes").doc(r.id)); });
+      await batch.commit();
+    }
+    // Restaurar depósito a capacidad máxima
+    await db.collection("config").doc("deposito").update({ actual: configDeposito.capacidad||2000 });
+    idsSeleccionados.clear();
+    toggleModoSeleccion();
+    toast(`🗑 Todos los ${total} repostajes han sido eliminados. Depósito restaurado.`,"#c62828");
+  }catch(e){ toast("Error al borrar: "+e.message,"#c62828"); }
+}
+
+
+  const r=registros.find(x=>x.id===id);
+  if(!r) return;
+  const esMio = r.trabajadorUid===currentUser.uid;
+  const esAdmin = currentProfile?.rol==="admin";
+  if(!esMio&&!esAdmin){ toast("⚠️ Solo puedes editar tus propios repostajes","#f59e0b"); return; }
+  abrirModalRepostaje(id);
+}
+
+// ════════════════════════════════════════════════════════
+//  MODAL RECARGA DEPÓSITO
+// ════════════════════════════════════════════════════════
+function abrirModalRecarga(){
+  if(currentProfile?.rol!=="admin"){ toast("⚠️ Solo el administrador puede registrar recargas","#f59e0b"); return; }
+  document.getElementById("rec-fecha").value = new Date().toISOString().substring(0,10);
+  document.getElementById("rec-litros").value = "";
+  document.getElementById("rec-proveedor").value = "";
+  document.getElementById("rec-precio").value = "";
+  document.getElementById("rec-notas").value = "";
+  document.getElementById("modal-recarga-error").style.display="none";
+  document.getElementById("modal-recarga").classList.add("open");
+}
+
+async function guardarRecarga(){
+  const err = document.getElementById("modal-recarga-error");
+  err.style.display="none";
+  const fecha   = document.getElementById("rec-fecha").value;
+  const litros  = parseFloat(document.getElementById("rec-litros").value);
+  const prov    = document.getElementById("rec-proveedor").value.trim();
+  const precio  = parseFloat(document.getElementById("rec-precio").value)||null;
+  const notas   = document.getElementById("rec-notas").value.trim();
+
+  if(!fecha||!litros||litros<=0){ err.textContent="Indica la fecha y los litros"; err.style.display="block"; return; }
+  const cap = configDeposito.capacidad||2000;
+  const act = configDeposito.actual||0;
+  if(act+litros>cap){ err.textContent=`El depósito sería mayor que su capacidad (${cap} L). Máx. a añadir: ${cap-act} L`; err.style.display="block"; return; }
+
+  try{
+    await db.collection("recargas").add({
+      fecha: firebase.firestore.Timestamp.fromDate(new Date(fecha)),
+      litros, proveedor:prov, precio, notas,
+      usuarioUid:currentUser.uid, usuarioNombre:currentProfile.nombre,
+      creadoEn:firebase.firestore.FieldValue.serverTimestamp()
+    });
+    await db.collection("config").doc("deposito").update({ actual: act+litros });
+    cerrarModal("modal-recarga");
+    toast("🔋 Recarga registrada · Depósito actualizado","#2e7d32");
+  }catch(e){ err.textContent="Error: "+e.message; err.style.display="block"; }
+}
+
+// ════════════════════════════════════════════════════════
+//  MODAL USUARIO
+// ════════════════════════════════════════════════════════
+function abrirModalUsuario(){
+  ["u-nombre","u-email","u-pass"].forEach(id=>document.getElementById(id).value="");
+  document.getElementById("u-rol").value="trabajador";
+  document.getElementById("u-color").value="#e65c00";
+  document.getElementById("modal-usuario-error").style.display="none";
+  document.getElementById("modal-usuario").classList.add("open");
+}
+
+async function crearUsuario(){
+  const err    = document.getElementById("modal-usuario-error");
+  err.style.display="none";
+  const nombre = document.getElementById("u-nombre").value.trim();
+  const email  = document.getElementById("u-email").value.trim();
+  const pass   = document.getElementById("u-pass").value;
+  const rol    = document.getElementById("u-rol").value;
+  const color  = document.getElementById("u-color").value;
+
+  if(!nombre||!email||!pass){ err.textContent="Rellena todos los campos"; err.style.display="block"; return; }
+  if(pass.length<6){ err.textContent="La contraseña debe tener al menos 6 caracteres"; err.style.display="block"; return; }
+
+  try{
+    // Crear auth sin perder sesión admin (técnica: crear secondary app)
+    const secondary = firebase.initializeApp(firebase.app().options, "secondary_"+Date.now());
+    const secAuth   = secondary.auth();
+    const cred      = await secAuth.createUserWithEmailAndPassword(email,pass);
+    const uid       = cred.user.uid;
+    await secAuth.signOut();
+    secondary.delete();
+
+    await db.collection("usuarios").doc(uid).set({
+      nombre, email, rol, color, creadoEn:firebase.firestore.FieldValue.serverTimestamp()
+    });
+    cerrarModal("modal-usuario");
+    toast(`✅ Usuario "${nombre}" creado correctamente`,"#2e7d32");
+  }catch(e){ err.textContent=_firebaseErr(e); err.style.display="block"; }
+}
+
+// ════════════════════════════════════════════════════════
+//  MODAL VEHÍCULO
+// ════════════════════════════════════════════════════════
+function abrirModalVehiculo(){
+  editandoVehiculo=null;
+  document.getElementById("modal-vehiculo-titulo").textContent="🚗 Nuevo Vehículo";
+  document.getElementById("btn-delete-vehiculo").style.display="none";
+  ["v-nombre","v-matricula"].forEach(id=>document.getElementById(id).value="");
+  document.getElementById("v-tipo").value="vehiculo";
+  document.getElementById("v-asignado").value="";
+  document.getElementById("modal-vehiculo-error").style.display="none";
+  poblarSelectTrabajadores();
+  document.getElementById("modal-vehiculo").classList.add("open");
+}
+
+function editarVehiculo(id){
+  const v=vehiculos.find(x=>x.id===id); if(!v) return;
+  editandoVehiculo=id;
+  document.getElementById("modal-vehiculo-titulo").textContent="✏️ Editar Vehículo";
+  document.getElementById("btn-delete-vehiculo").style.display="";
+  document.getElementById("v-nombre").value=v.nombre||"";
+  document.getElementById("v-matricula").value=v.matricula||"";
+  document.getElementById("v-tipo").value=v.tipo||"vehiculo";
+  poblarSelectTrabajadores();
+  setTimeout(()=>document.getElementById("v-asignado").value=v.asignadoA||"",100);
+  document.getElementById("modal-vehiculo-error").style.display="none";
+  document.getElementById("modal-vehiculo").classList.add("open");
+}
+
+async function guardarVehiculo(){
+  const err = document.getElementById("modal-vehiculo-error");
+  err.style.display="none";
+  const nombre   = document.getElementById("v-nombre").value.trim();
+  const matricula= document.getElementById("v-matricula").value.trim().toUpperCase();
+  const tipo     = document.getElementById("v-tipo").value;
+  const asignadoA= document.getElementById("v-asignado").value;
+  if(!nombre){ err.textContent="Indica el nombre del vehículo"; err.style.display="block"; return; }
+  const data={nombre,matricula,tipo,asignadoA,actualizadoEn:firebase.firestore.FieldValue.serverTimestamp()};
+  try{
+    if(editandoVehiculo) await db.collection("vehiculos").doc(editandoVehiculo).update(data);
+    else{ data.creadoEn=firebase.firestore.FieldValue.serverTimestamp(); await db.collection("vehiculos").add(data); }
+    cerrarModal("modal-vehiculo");
+    toast("🚗 Vehículo guardado","#2e7d32");
+  }catch(e){ err.textContent="Error: "+e.message; err.style.display="block"; }
+}
+
+async function borrarVehiculo(){
+  if(!editandoVehiculo) return;
+  if(!confirm("¿Eliminar este vehículo?")) return;
+  try{ await db.collection("vehiculos").doc(editandoVehiculo).delete(); cerrarModal("modal-vehiculo"); toast("🗑 Vehículo eliminado","#c62828"); }
+  catch(e){ toast("Error: "+e.message,"#c62828"); }
+}
+
+// ════════════════════════════════════════════════════════
+//  CONFIG DEPÓSITO
+// ════════════════════════════════════════════════════════
+async function guardarConfigDeposito(){
+  if(currentProfile?.rol!=="admin"){ toast("Solo admin","#c62828"); return; }
+  const cap   = parseFloat(document.getElementById("dep-capacidad-inp").value);
+  const act   = parseFloat(document.getElementById("dep-actual-inp").value);
+  const alerta= parseFloat(document.getElementById("dep-alerta-inp").value)||20;
+  if(!cap||cap<=0||isNaN(act)||act<0){ toast("⚠️ Valores no válidos","#f59e0b"); return; }
+  if(act>cap){ toast("⚠️ El nivel actual no puede superar la capacidad","#f59e0b"); return; }
+  try{
+    await db.collection("config").doc("deposito").set({capacidad:cap,actual:act,alerta},{merge:true});
+    toast("💾 Configuración del depósito guardada","#2e7d32");
+  }catch(e){ toast("Error: "+e.message,"#c62828"); }
+}
+
+// ════════════════════════════════════════════════════════
+//  EXPORTAR EXCEL
+// ════════════════════════════════════════════════════════
+function exportarExcel(){
+  if(!registros.length){ toast("No hay registros para exportar","#f59e0b"); return; }
+  const rows = registros.map(r=>({
+    "Fecha":       _fmtFecha(r.fecha),
+    "Trabajador":  r.trabajadorNombre||"",
+    "Litros":      r.litros||0,
+    "Vehículo":    r.vehiculo||"",
+    "Contador Depósito":r.odometro||"",
+    "Notas":       r.notas||""
+  }));
+  const ws = XLSX.utils.json_to_sheet(rows);
+  ws["!cols"]=[{wch:18},{wch:22},{wch:10},{wch:20},{wch:14},{wch:30}];
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,"Repostajes",ws);
+  // Hoja resumen por trabajador
+  const tMap={};
+  registros.forEach(r=>{ const k=r.trabajadorNombre||"?"; tMap[k]=(tMap[k]||0)+(r.litros||0); });
+  const resRows = Object.entries(tMap).sort((a,b)=>b[1]-a[1]).map(([nombre,litros])=>({Trabajador:nombre,"Total Litros":+litros.toFixed(1)}));
+  const ws2=XLSX.utils.json_to_sheet(resRows);
+  XLSX.utils.book_append_sheet(wb,"Resumen Trabajadores",ws2);
+  XLSX.writeFile(wb,"Marcopack_Gasoil_"+new Date().toISOString().substring(0,10)+".xlsx");
+  toast("📤 Excel exportado","#2e7d32");
+}
+
+// ════════════════════════════════════════════════════════
+//  NAVEGACIÓN
+// ════════════════════════════════════════════════════════
+function setVista(v){
+  // Bloquear acceso a secciones restringidas para trabajadores
+  const restringidas = ['registros','estadisticas','ranking','deposito','admin'];
+  if(currentProfile?.rol !== 'admin' && restringidas.includes(v)){
+    toast("⚠️ No tienes permiso para acceder a esta sección","#c62828");
+    return;
+  }
+  vistaActual=v;
+  document.querySelectorAll(".view").forEach(el=>el.classList.remove("active"));
+  document.querySelectorAll(".nav-btn").forEach(el=>el.classList.remove("active"));
+  const viewEl=document.getElementById("view-"+v);
+  if(viewEl) viewEl.classList.add("active");
+  const navEl=document.getElementById("nav-"+v);
+  if(navEl) navEl.classList.add("active");
+  // Re-renderizar charts al cambiar vista
+  if(v==="dashboard"||v==="estadisticas") setTimeout(renderCharts,50);
+  if(v==="deposito") setTimeout(renderChartDepositoNivel,50);
+  if(v==="ranking") renderRanking();
+}
+
+function cerrarModal(id){
+  document.getElementById(id).classList.remove("open");
+}
+
+// ════════════════════════════════════════════════════════
+//  UTILS
+// ════════════════════════════════════════════════════════
+function _tsToDate(ts){
+  if(!ts) return new Date(0);
+  if(ts.toDate) return ts.toDate();
+  if(ts.seconds) return new Date(ts.seconds*1000);
+  return new Date(ts);
+}
+
+function _fmtFecha(ts){
+  const d=_tsToDate(ts);
+  if(d.getTime()===0) return "—";
+  return d.toLocaleDateString("es-ES",{day:"2-digit",month:"2-digit",year:"numeric"})+" "+d.toLocaleTimeString("es-ES",{hour:"2-digit",minute:"2-digit"});
+}
+
+function _fmtFechaCorta(ts){
+  const d=_tsToDate(ts);
+  if(d.getTime()===0) return "—";
+  return d.toLocaleDateString("es-ES",{day:"2-digit",month:"2-digit",year:"numeric"});
+}
+
+function _fmtMes(ym){
+  const [y,m]=ym.split("-");
+  const meses=["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
+  return `${meses[parseInt(m)-1]} ${y}`;
+}
+
+function _tsToLocalInput(ts){
+  const d=_tsToDate(ts);
+  if(d.getTime()===0) return "";
+  const tzOff=d.getTimezoneOffset()*60000;
+  return new Date(d-tzOff).toISOString().substring(0,16);
+}
+
+function _esc(s){ return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
+
+// Escape global
+document.addEventListener("keydown",e=>{
+  if(e.key!=="Escape") return;
+  // Cerrar lightbox si está abierto
+  if(document.getElementById("lightbox")?.classList.contains("open")){ cerrarLightbox(); e.preventDefault(); return; }
+  ["modal-repostaje","modal-recarga","modal-usuario","modal-vehiculo"].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el&&el.classList.contains("open")){ cerrarModal(id); e.preventDefault(); }
+  });
+});
+</script>
+</body>
+</html>

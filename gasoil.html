@@ -392,34 +392,6 @@ tbody tr.seleccionada{background:var(--red-bg)!important;outline:1.5px solid #ef
 .abono-item:last-child{border-bottom:none}
 .abono-metodo-badge{padding:2px 8px;border-radius:20px;font-size:10px;font-weight:700;background:var(--green-bg);color:var(--green)}
 
-/* ===== DESGLOSE VEHÍCULOS EN DEUDAS ===== */
-.deuda-seccion-titulo{font-size:11px;font-weight:800;color:var(--text2);text-transform:uppercase;letter-spacing:.06em;margin:14px 0 8px;display:flex;align-items:center;gap:6px}
-.deuda-seccion-titulo::after{content:'';flex:1;height:1px;background:var(--border)}
-.deuda-veh-tabla{width:100%;border-collapse:collapse;margin-bottom:4px}
-.deuda-veh-tabla th{font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.04em;padding:5px 8px;text-align:left;background:var(--surface2);border-bottom:1px solid var(--border)}
-.deuda-veh-tabla th:last-child,.deuda-veh-tabla td:last-child{text-align:right}
-.deuda-veh-tabla td{font-size:12px;color:var(--text);padding:7px 8px;border-bottom:1px solid var(--border)}
-.deuda-veh-tabla tr:last-child td{border-bottom:none}
-.deuda-veh-tabla tr:hover td{background:var(--surface2)}
-.veh-badge{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:700}
-.veh-badge-empresa{background:var(--blue-bg);color:var(--blue)}
-.veh-badge-personal{background:var(--orange-bg);color:var(--orange)}
-.veh-badge-otro{background:var(--fuel-bg);color:var(--text2)}
-.cobrable-badge{display:inline-flex;align-items:center;gap:3px;padding:2px 7px;border-radius:20px;font-size:10px;font-weight:700}
-.cobrable-si{background:var(--red-bg);color:var(--red)}
-.cobrable-no{background:var(--green-bg);color:var(--green)}
-.deuda-veh-nota{font-size:11px;color:var(--text3);font-style:italic;padding:6px 8px;background:var(--surface2);border-radius:var(--radius-sm);margin-top:6px;border-left:3px solid var(--border2)}
-.deuda-resumen-cobrable{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0 4px}
-.deuda-resumen-box{flex:1;min-width:120px;border-radius:var(--radius-sm);padding:10px 12px;text-align:center}
-.deuda-resumen-box-cobrable{background:var(--red-bg);border:1px solid #fca5a5}
-.deuda-resumen-box-empresa{background:var(--green-bg);border:1px solid #a5d6a7}
-.deuda-resumen-box-lbl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;margin-bottom:3px}
-.deuda-resumen-box-lbl-cobrable{color:var(--red)}
-.deuda-resumen-box-lbl-empresa{color:var(--green)}
-.deuda-resumen-box-val{font-size:16px;font-weight:800}
-.deuda-resumen-box-val-cobrable{color:var(--red)}
-.deuda-resumen-box-val-empresa{color:var(--green)}
-
 /* ===== RESPONSIVE ===== */
 @media(max-width:600px){
   .stats{grid-template-columns:repeat(2,1fr)}
@@ -683,11 +655,11 @@ tbody tr.seleccionada{background:var(--red-bg)!important;outline:1.5px solid #ef
         <div class="grid2" style="max-width:500px">
           <div class="field">
             <label>Capacidad total (litros)</label>
-            <input type="number" id="dep-capacidad-inp" placeholder="Ej: 2000" min="1"/>
+            <input type="number" id="dep-capacidad-inp" placeholder="Ej: 2000" min="0.01" step="0.01"/>
           </div>
           <div class="field">
             <label>Nivel actual (litros)</label>
-            <input type="number" id="dep-actual-inp" placeholder="Litros actuales" min="0"/>
+            <input type="number" id="dep-actual-inp" placeholder="Ej: 1547.30" min="0" step="0.01"/>
           </div>
           <div class="field">
             <label>Alerta nivel bajo (%)</label>
@@ -901,7 +873,7 @@ tbody tr.seleccionada{background:var(--red-bg)!important;outline:1.5px solid #ef
       </div>
       <div class="field">
         <label>Litros añadidos</label>
-        <input type="number" id="rec-litros" placeholder="Ej: 1000" min="1" step="1"/>
+        <input type="number" id="rec-litros" placeholder="Ej: 1000.50" min="0.01" step="0.01"/>
       </div>
       <div class="field">
         <label>Proveedor</label>
@@ -1414,14 +1386,16 @@ function actualizarDeposito(){
                            pct<=alerta?"linear-gradient(90deg,#f57f17,#e65c00)":
                            "linear-gradient(90deg,var(--accent2),var(--accent))";
     const lbl = document.getElementById("dep-bar-lbl-hdr");
-    if(lbl) lbl.textContent = pct > 15 ? act.toLocaleString("es-ES")+" L ("+pct+"%)" : "";
+    if(lbl) lbl.textContent = pct > 15 ? act.toLocaleString("es-ES",{minimumFractionDigits:0,maximumFractionDigits:2})+" L ("+pct+"%)" : "";
   }
 
   const datos = document.getElementById("dep-datos-hdr");
+  // Muestra decimales solo si los hay (ej: 1547.30 L o 2000 L)
+  function _fmtL(v){ return Number.isInteger(v) ? v.toLocaleString("es-ES") : v.toLocaleString("es-ES",{minimumFractionDigits:2,maximumFractionDigits:2}); }
   if(datos) datos.innerHTML = `
-    <span class="deposito-dato">🛢️ Actual: <strong>${act.toLocaleString("es-ES")} L</strong></span>
-    <span class="deposito-dato">📦 Capacidad: <strong>${cap.toLocaleString("es-ES")} L</strong></span>
-    <span class="deposito-dato">📉 Libre: <strong>${(cap-act).toLocaleString("es-ES")} L</strong></span>
+    <span class="deposito-dato">🛢️ Actual: <strong>${_fmtL(act)} L</strong></span>
+    <span class="deposito-dato">📦 Capacidad: <strong>${_fmtL(cap)} L</strong></span>
+    <span class="deposito-dato">📉 Libre: <strong>${_fmtL(Math.round((cap-act)*100)/100)} L</strong></span>
     ${pct<=alerta?`<span class="deposito-dato" style="color:var(--red);font-weight:700">⚠️ Nivel bajo — reponer</span>`:""}
   `;
 }
@@ -2214,8 +2188,13 @@ function calcularCosteRepostaje(){
   const precio = parseFloat(document.getElementById("r-precio-litro").value)||0;
   const costeEl = document.getElementById("r-coste-total");
   if(litros > 0 && precio > 0){
-    const total = (litros * precio).toFixed(2);
-    costeEl.value = total.replace(".",",") + " €";
+    // Multiplicación con precisión: evitar errores de coma flotante IEEE 754
+    // Usamos factor 1000 para trabajar con enteros y luego dividir
+    const litrosCents  = Math.round(litros * 1000);
+    const precioCents  = Math.round(precio * 1000);
+    const total = (litrosCents * precioCents) / 1_000_000;
+    const totalRedondeado = Math.round(total * 100) / 100;
+    costeEl.value = totalRedondeado.toLocaleString("es-ES",{minimumFractionDigits:2,maximumFractionDigits:2}) + " €";
   } else {
     costeEl.value = "";
   }
@@ -2352,7 +2331,13 @@ async function guardarRepostaje(){
   const odometroVal   = parseInt(document.getElementById("r-odometro").value)||null;
   const notas         = document.getElementById("r-notas").value.trim();
   const precioLitro   = parseFloat(document.getElementById("r-precio-litro").value)||null;
-  const costeTotal    = (precioLitro && litrosVal) ? parseFloat((precioLitro * litrosVal).toFixed(2)) : null;
+  // Cálculo con precisión para evitar errores IEEE 754 con decimales
+  let costeTotal = null;
+  if(precioLitro && litrosVal){
+    const lC = Math.round(litrosVal  * 1000);
+    const pC = Math.round(precioLitro * 1000);
+    costeTotal = Math.round((lC * pC) / 1_000_000 * 100) / 100;
+  }
 
   if(!trabajadorUid){ err.textContent="Selecciona un trabajador"; err.style.display="block"; return; }
   if(!fechaVal){ err.textContent="Indica la fecha"; err.style.display="block"; return; }
@@ -2402,7 +2387,7 @@ async function guardarRepostaje(){
       data.creadoEn = firebase.firestore.FieldValue.serverTimestamp();
       await db.collection("repostajes").add(data);
       // Descontar del depósito
-      const nuevoActual = Math.max(0,(configDeposito.actual||0)-litrosVal);
+      const nuevoActual = Math.round(Math.max(0,(configDeposito.actual||0)-litrosVal)*100)/100;
       await db.collection("config").doc("deposito").update({ actual: nuevoActual });
       toast("⛽ Repostaje registrado","#e65c00");
     }
@@ -2854,7 +2839,7 @@ async function exportarExcel(){
     const dataRows = regsOrden.map(r=>{
       const precioRecarga = _precioRecargaEnFecha(r.fecha);
       const precioLitro   = r.precioLitro || precioRecarga || null;
-      const costeTotal    = r.costeTotal  || (precioLitro && r.litros ? parseFloat((precioLitro * r.litros).toFixed(2)) : null);
+      const costeTotal    = r.costeTotal  || (precioLitro && r.litros ? (Math.round(Math.round(precioLitro*1000)*Math.round(r.litros*1000))/1_000_000*100)/100 : null);
       totalLitros += r.litros||0;
       totalCoste  += costeTotal||0;
       return [
@@ -2916,7 +2901,7 @@ async function exportarExcel(){
     registros.forEach(r=>{
       const precioRecarga = _precioRecargaEnFecha(r.fecha);
       const precioLitro   = r.precioLitro || precioRecarga || null;
-      const costeTotal    = r.costeTotal  || (precioLitro && r.litros ? parseFloat((precioLitro * r.litros).toFixed(2)) : 0);
+      const costeTotal    = r.costeTotal  || (precioLitro && r.litros ? (Math.round(Math.round(precioLitro*1000)*Math.round(r.litros*1000))/1_000_000*100)/100 : 0);
       const k = r.trabajadorNombre||"?";
       if(!tMap[k]) tMap[k]={litros:0, coste:0, n:0};
       tMap[k].litros += (r.litros||0);
@@ -2958,7 +2943,7 @@ async function exportarExcel(){
 
     const hdrs3 = ["Fecha","Litros","Precio €/L","Coste Total (€)","Proveedor","Notas"];
     const dataRows3 = recOrden.map(r=>{
-      const coste = r.precio && r.litros ? +(r.precio*r.litros).toFixed(2) : 0;
+      const coste = r.precio && r.litros ? +Math.round(Math.round(r.precio*1000)*Math.round(r.litros*1000)/1_000_000*100)/100 : 0;
       sumLRec += r.litros||0;
       sumCRec += coste;
       return [_fmtFechaCorta(r.fecha), r.litros||0, r.precio||"", coste||"", r.proveedor||"", r.notas||""];
@@ -2992,7 +2977,7 @@ async function exportarExcel(){
         const uid = r.trabajadorUid; if(!uid) return;
         const precioRecarga = _precioRecargaEnFecha(r.fecha);
         const precio = r.precioLitro || precioRecarga || 0;
-        const coste  = r.costeTotal  || (precio>0 ? parseFloat((precio*(r.litros||0)).toFixed(2)) : 0);
+        const coste  = r.costeTotal  || (precio>0 ? Math.round(Math.round(precio*1000)*Math.round((r.litros||0)*1000)/1_000_000*100)/100 : 0);
         if(!dMap[uid]) dMap[uid]={ nombre:r.trabajadorNombre||uid, debe:0, abonado:0, nRep:0, nAbonos:0 };
         dMap[uid].debe  += coste;
         dMap[uid].nRep  += 1;
@@ -3166,26 +3151,10 @@ function poblarFiltroDeudas(){
  * - totalAbonado: suma de abonos registrados
  * - pendiente: totalDebe - totalAbonado
  */
-// Tipos que se consideran "vehículo de empresa" (no cobrable al trabajador)
-const TIPOS_EMPRESA = ["furgoneta", "camion", "maquinaria"];
-
-// Determina si un nombre de vehículo corresponde a un vehículo de empresa
-function _esVehiculoEmpresa(nombreVehiculo){
-  if(!nombreVehiculo || nombreVehiculo === "—") return false;
-  // Buscar en catálogo fijo
-  const enCatalogo = VEHICULOS_CATALOGO.find(c => c.nombre.toUpperCase() === (nombreVehiculo||"").toUpperCase());
-  if(enCatalogo) return TIPOS_EMPRESA.includes(enCatalogo.tipo);
-  // Buscar en vehículos de Firebase
-  const enFirebase = vehiculos.find(v => (v.nombre||"").toUpperCase() === (nombreVehiculo||"").toUpperCase());
-  if(enFirebase) return TIPOS_EMPRESA.includes(enFirebase.tipo||"");
-  return false;
-}
-
 function calcularResumenDeudas(){
-  // uid → { nombre, color, totalDebe, totalAbonado, nRepostajes, abonos[], porVehiculo: {} }
-  // porVehiculo: nombreVeh → { nombre, esEmpresa, coste, litros, nRepostajes }
-  const mapa = {};
+  const mapa = {}; // uid → { nombre, color, totalDebe, totalAbonado, nRepostajes, abonos[] }
 
+  // Sumar costes de repostajes
   registros.forEach(r=>{
     const uid = r.trabajadorUid;
     if(!uid) return;
@@ -3193,39 +3162,20 @@ function calcularResumenDeudas(){
       const u = usuarios.find(x=>x.id===uid);
       mapa[uid] = {
         uid,
-        nombre:      r.trabajadorNombre || u?.nombre || uid,
-        color:       r.color || u?.color || "#e65c00",
-        totalDebe:   0,
-        totalAbonado:0,
+        nombre: r.trabajadorNombre || u?.nombre || uid,
+        color: r.color || u?.color || "#e65c00",
+        totalDebe: 0,
+        totalAbonado: 0,
         nRepostajes: 0,
-        abonos:      [],
-        porVehiculo: {}   // ← NUEVO: desglose por vehículo
+        abonos: []
       };
     }
-
-    // Calcular coste
+    // Calcular coste: precio guardado × litros, o precio recarga vigente × litros
     const fechaRep = _tsToDate(r.fecha);
     const precio = r.precioLitro || _precioUltimaRecarga(fechaRep) || 0;
-    const coste  = r.costeTotal  || (precio > 0 ? parseFloat((precio * (r.litros||0)).toFixed(2)) : 0);
-
-    mapa[uid].totalDebe   += coste;
-    mapa[uid].nRepostajes += 1;
-
-    // ── Acumular por vehículo ──────────────────────────
-    const nombreVeh  = r.vehiculo || "Sin especificar";
-    const esEmpresa  = _esVehiculoEmpresa(r.vehiculo);
-    if(!mapa[uid].porVehiculo[nombreVeh]){
-      mapa[uid].porVehiculo[nombreVeh] = {
-        nombre:      nombreVeh,
-        esEmpresa,
-        coste:       0,
-        litros:      0,
-        nRepostajes: 0
-      };
-    }
-    mapa[uid].porVehiculo[nombreVeh].coste       += coste;
-    mapa[uid].porVehiculo[nombreVeh].litros      += (r.litros||0);
-    mapa[uid].porVehiculo[nombreVeh].nRepostajes += 1;
+    const coste  = r.costeTotal  || (precio > 0 ? Math.round(Math.round(precio*1000)*Math.round((r.litros||0)*1000)/1_000_000*100)/100 : 0);
+    mapa[uid].totalDebe    += coste;
+    mapa[uid].nRepostajes  += 1;
   });
 
   return mapa;
@@ -3340,85 +3290,6 @@ async function renderDeudas(){
       </div>`;
     }).join("") : '<div style="color:var(--text3);font-size:12px;font-style:italic;padding:8px 0">Sin abonos registrados</div>';
 
-    // ── Construir desglose por vehículo ─────────────────────────
-    const vehiculosOrden = Object.values(t.porVehiculo||{})
-      .sort((a,b) => b.coste - a.coste); // mayor coste primero
-
-    const costeEmpresa  = vehiculosOrden.filter(v=>v.esEmpresa).reduce((s,v)=>s+v.coste,0);
-    const costePersonal = vehiculosOrden.filter(v=>!v.esEmpresa).reduce((s,v)=>s+v.coste,0);
-    // Proporción ya abonada: la repartimos entre empresa y personal
-    const pctCobrado        = t.totalDebe > 0 ? t.totalAbonado / t.totalDebe : 0;
-    const abonadoPersonal   = costePersonal * pctCobrado;
-    const abonadoEmpresa    = costeEmpresa  * pctCobrado;
-    const pendientePersonal = Math.max(0, costePersonal - abonadoPersonal);
-    const pendienteEmpresa  = Math.max(0, costeEmpresa  - abonadoEmpresa);
-
-    const hayVehEmpresa  = vehiculosOrden.some(v=>v.esEmpresa);
-    const hayVehPersonal = vehiculosOrden.some(v=>!v.esEmpresa);
-
-    const iconosTipoMap = {vehiculo:"🚗", furgoneta:"🚐", camion:"🚛", maquinaria:"⚙️", otro:"🔧"};
-    function _iconoVeh(nombre){
-      const c = VEHICULOS_CATALOGO.find(x=>x.nombre.toUpperCase()===(nombre||"").toUpperCase());
-      if(c) return c.icono||"🚗";
-      const f = vehiculos.find(x=>(x.nombre||"").toUpperCase()===(nombre||"").toUpperCase());
-      if(f) return iconosTipoMap[f.tipo]||"🔧";
-      return "⛽";
-    }
-
-    const filasVehiculos = vehiculosOrden.map(v=>{
-      const badgeClass   = v.esEmpresa ? "veh-badge-empresa" : "veh-badge-personal";
-      const badgeLabel   = v.esEmpresa ? "Empresa"           : "Personal";
-      const cobrableClass = v.esEmpresa ? "cobrable-no"      : "cobrable-si";
-      const cobrableLabel = v.esEmpresa ? "✅ No cobrar"     : "🔴 Cobrar";
-      return `<tr>
-        <td>
-          <span style="font-size:15px;margin-right:5px">${_iconoVeh(v.nombre)}</span>
-          <strong>${_esc(v.nombre)}</strong>
-          <span class="veh-badge ${badgeClass}" style="margin-left:6px">${badgeLabel}</span>
-        </td>
-        <td style="color:var(--text3)">${v.nRepostajes}</td>
-        <td style="color:var(--text3)">${v.litros.toLocaleString("es-ES",{minimumFractionDigits:1,maximumFractionDigits:1})} L</td>
-        <td style="font-weight:700;color:var(--accent)">${v.coste.toLocaleString("es-ES",{minimumFractionDigits:2,maximumFractionDigits:2})} €</td>
-        <td><span class="cobrable-badge ${cobrableClass}">${cobrableLabel}</span></td>
-      </tr>`;
-    }).join("");
-
-    // Nota de resumen cobrable/empresa
-    const resumenCobrableHTML = (hayVehEmpresa && hayVehPersonal) ? `
-      <div class="deuda-resumen-cobrable">
-        <div class="deuda-resumen-box deuda-resumen-box-cobrable">
-          <div class="deuda-resumen-box-lbl deuda-resumen-box-lbl-cobrable">🔴 A cobrar (uso personal)</div>
-          <div class="deuda-resumen-box-val deuda-resumen-box-val-cobrable">${pendientePersonal.toLocaleString("es-ES",{minimumFractionDigits:2,maximumFractionDigits:2})} €</div>
-        </div>
-        <div class="deuda-resumen-box deuda-resumen-box-empresa">
-          <div class="deuda-resumen-box-lbl deuda-resumen-box-lbl-empresa">✅ Empresa (no cobrar)</div>
-          <div class="deuda-resumen-box-val deuda-resumen-box-val-empresa">${pendienteEmpresa.toLocaleString("es-ES",{minimumFractionDigits:2,maximumFractionDigits:2})} €</div>
-        </div>
-      </div>
-      <div class="deuda-veh-nota">💡 Los repostajes en vehículos de empresa <strong>no se cobran</strong> al trabajador. Solo el importe marcado en rojo corresponde a uso personal.</div>
-    ` : (hayVehEmpresa && !hayVehPersonal) ? `
-      <div class="deuda-veh-nota">✅ Todos los repostajes son en vehículos de empresa — <strong>no hay nada que cobrar a este trabajador.</strong></div>
-    ` : "";
-
-    const desgloseVehiculos = vehiculosOrden.length ? `
-      <div class="deuda-seccion-titulo">📋 Desglose por vehículo</div>
-      <div style="overflow-x:auto;border-radius:var(--radius-sm);border:1px solid var(--border);margin-bottom:8px">
-        <table class="deuda-veh-tabla">
-          <thead>
-            <tr>
-              <th>Vehículo</th>
-              <th>Repos.</th>
-              <th>Litros</th>
-              <th>Coste total</th>
-              <th>¿Cobrable?</th>
-            </tr>
-          </thead>
-          <tbody>${filasVehiculos}</tbody>
-        </table>
-      </div>
-      ${resumenCobrableHTML}
-    ` : "";
-
     return `<div class="deuda-card ${cardClass}">
       <div class="deuda-card-header">
         <div class="deuda-avatar" style="background:${t.color}">${(t.nombre||"?")[0].toUpperCase()}</div>
@@ -3457,8 +3328,6 @@ async function renderDeudas(){
           <div class="deuda-barra" style="width:${pct}%;background:${barColor}"></div>
         </div>
       </div>
-
-      ${desgloseVehiculos}
 
       <div class="deuda-acciones">
         ${!saldado ? `<button class="btn-abonar" onclick="abrirModalAbono('${t.uid}','${_esc(t.nombre)}',${pendiente.toFixed(2)})">💶 Registrar abono</button>` : ""}

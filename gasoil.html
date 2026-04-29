@@ -848,7 +848,7 @@ tbody tr.seleccionada{background:var(--red-bg)!important;outline:1.5px solid #ef
 <div class="modal-overlay" id="modal-recarga">
   <div class="modal">
     <button class="modal-close" onclick="cerrarModal('modal-recarga')">✕</button>
-    <h2>🔋 Registrar Recarga de Depósito</h2>
+    <h2 id="modal-recarga-titulo">🔋 Registrar Recarga de Depósito</h2>
     <div class="grid2">
       <div class="field">
         <label>Fecha de recarga</label>
@@ -873,8 +873,9 @@ tbody tr.seleccionada{background:var(--red-bg)!important;outline:1.5px solid #ef
     </div>
     <div id="modal-recarga-error" class="error-msg"></div>
     <div class="modal-footer">
+      <button class="btn-delete" id="btn-eliminar-recarga" style="display:none;margin-right:auto" onclick="eliminarRecarga()">🗑️ Eliminar</button>
       <button class="btn-cancel" onclick="cerrarModal('modal-recarga')">Cancelar</button>
-      <button class="btn-save" onclick="guardarRecarga()">🔋 Registrar Recarga</button>
+      <button class="btn-save" id="btn-guardar-recarga" onclick="guardarRecarga()">🔋 Registrar Recarga</button>
     </div>
   </div>
 </div>
@@ -1756,15 +1757,19 @@ function renderRanking(){
 function renderRecargasList(){
   const wrap=document.getElementById("recargas-list"); if(!wrap) return;
   if(!recargas.length){ wrap.innerHTML=`<div style="color:var(--text3);font-size:12px;font-style:italic;padding:10px">Sin recargas registradas</div>`; return; }
+  const esAdmin = currentProfile?.rol==="admin";
   wrap.innerHTML = recargas.slice(0,15).map(r=>{
     const precio = r.precio ? (r.litros*r.precio).toLocaleString("es-ES",{minimumFractionDigits:2,maximumFractionDigits:2})+" €" : "";
     return `<div class="recarga-item">
-      <div>
+      <div style="flex:1">
         <div style="font-size:13px;font-weight:700;color:var(--text)">🔋 Recarga</div>
         <div class="recarga-dato">${_fmtFechaCorta(r.fecha)} · ${_esc(r.proveedor||"Sin proveedor")}</div>
         ${precio?`<div class="recarga-dato">💶 ${precio}</div>`:""}
       </div>
-      <div class="recarga-litros">+${(r.litros||0).toLocaleString("es-ES")} L</div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <div class="recarga-litros">+${(r.litros||0).toLocaleString("es-ES")} L</div>
+        ${esAdmin?`<button onclick="abrirModalRecarga('${r.id}')" style="background:var(--blue-bg);color:var(--blue);border:1px solid #90caf9;border-radius:6px;padding:4px 10px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap" title="Editar recarga">✏️ Editar</button>`:""}
+      </div>
     </div>`;
   }).join("");
 }
@@ -2301,13 +2306,32 @@ function editarRepostaje(id){
 // ════════════════════════════════════════════════════════
 //  MODAL RECARGA DEPÓSITO
 // ════════════════════════════════════════════════════════
-function abrirModalRecarga(){
+let recargaEditId = null; // null = nueva, string = editar
+
+function abrirModalRecarga(idRecarga){
   if(currentProfile?.rol!=="admin"){ toast("⚠️ Solo el administrador puede registrar recargas","#f59e0b"); return; }
-  document.getElementById("rec-fecha").value = new Date().toISOString().substring(0,10);
-  document.getElementById("rec-litros").value = "";
-  document.getElementById("rec-proveedor").value = "";
-  document.getElementById("rec-precio").value = "";
-  document.getElementById("rec-notas").value = "";
+  recargaEditId = idRecarga || null;
+  const esEdicion = !!recargaEditId;
+  document.getElementById("modal-recarga-titulo").textContent = esEdicion ? "✏️ Editar Recarga" : "🔋 Registrar Recarga de Depósito";
+  document.getElementById("btn-guardar-recarga").textContent = esEdicion ? "💾 Guardar cambios" : "🔋 Registrar Recarga";
+  document.getElementById("btn-eliminar-recarga").style.display = esEdicion ? "inline-flex" : "none";
+
+  if(esEdicion){
+    const r = recargas.find(x=>x.id===recargaEditId);
+    if(!r){ toast("No se encontró la recarga","#c62828"); return; }
+    const d = _tsToDate(r.fecha);
+    document.getElementById("rec-fecha").value = d.toISOString().substring(0,10);
+    document.getElementById("rec-litros").value = r.litros||"";
+    document.getElementById("rec-proveedor").value = r.proveedor||"";
+    document.getElementById("rec-precio").value = r.precio||"";
+    document.getElementById("rec-notas").value = r.notas||"";
+  } else {
+    document.getElementById("rec-fecha").value = new Date().toISOString().substring(0,10);
+    document.getElementById("rec-litros").value = "";
+    document.getElementById("rec-proveedor").value = "";
+    document.getElementById("rec-precio").value = "";
+    document.getElementById("rec-notas").value = "";
+  }
   document.getElementById("modal-recarga-error").style.display="none";
   document.getElementById("modal-recarga").classList.add("open");
 }
@@ -2324,19 +2348,53 @@ async function guardarRecarga(){
   if(!fecha||!litros||litros<=0){ err.textContent="Indica la fecha y los litros"; err.style.display="block"; return; }
   const cap = configDeposito.capacidad||2000;
   const act = configDeposito.actual||0;
-  if(act+litros>cap){ err.textContent=`El depósito sería mayor que su capacidad (${cap} L). Máx. a añadir: ${cap-act} L`; err.style.display="block"; return; }
 
   try{
-    await db.collection("recargas").add({
-      fecha: firebase.firestore.Timestamp.fromDate(new Date(fecha)),
-      litros, proveedor:prov, precio, notas,
-      usuarioUid:currentUser.uid, usuarioNombre:currentProfile.nombre,
-      creadoEn:firebase.firestore.FieldValue.serverTimestamp()
-    });
-    await db.collection("config").doc("deposito").update({ actual: act+litros });
-    cerrarModal("modal-recarga");
-    toast("🔋 Recarga registrada · Depósito actualizado","#2e7d32");
+    if(recargaEditId){
+      // Edición: ajustar depósito con la diferencia
+      const antigua = recargas.find(x=>x.id===recargaEditId);
+      const litrosAntiguos = antigua?.litros||0;
+      const diferencia = litros - litrosAntiguos;
+      const nuevoActual = act + diferencia;
+      if(nuevoActual > cap){ err.textContent=`El depósito superaría su capacidad (${cap} L). Reduce los litros.`; err.style.display="block"; return; }
+      await db.collection("recargas").doc(recargaEditId).update({
+        fecha: firebase.firestore.Timestamp.fromDate(new Date(fecha)),
+        litros, proveedor:prov, precio, notas,
+        modificadoPor: currentUser.uid, modificadoPorNombre: currentProfile.nombre,
+        modificadoEn: firebase.firestore.FieldValue.serverTimestamp()
+      });
+      await db.collection("config").doc("deposito").update({ actual: nuevoActual });
+      cerrarModal("modal-recarga");
+      toast("✅ Recarga actualizada correctamente","#2e7d32");
+    } else {
+      // Nueva recarga
+      if(act+litros>cap){ err.textContent=`El depósito sería mayor que su capacidad (${cap} L). Máx. a añadir: ${cap-act} L`; err.style.display="block"; return; }
+      await db.collection("recargas").add({
+        fecha: firebase.firestore.Timestamp.fromDate(new Date(fecha)),
+        litros, proveedor:prov, precio, notas,
+        usuarioUid:currentUser.uid, usuarioNombre:currentProfile.nombre,
+        creadoEn:firebase.firestore.FieldValue.serverTimestamp()
+      });
+      await db.collection("config").doc("deposito").update({ actual: act+litros });
+      cerrarModal("modal-recarga");
+      toast("🔋 Recarga registrada · Depósito actualizado","#2e7d32");
+    }
   }catch(e){ err.textContent="Error: "+e.message; err.style.display="block"; }
+}
+
+async function eliminarRecarga(){
+  if(!recargaEditId) return;
+  const r = recargas.find(x=>x.id===recargaEditId);
+  if(!r) return;
+  const litros = r.litros||0;
+  if(!confirm(`¿Eliminar esta recarga de ${litros.toLocaleString("es-ES")} L? Se descontarán los litros del depósito.`)) return;
+  try{
+    const act = configDeposito.actual||0;
+    await db.collection("recargas").doc(recargaEditId).delete();
+    await db.collection("config").doc("deposito").update({ actual: Math.max(0, act - litros) });
+    cerrarModal("modal-recarga");
+    toast("🗑️ Recarga eliminada · Depósito actualizado","#e65c00");
+  }catch(e){ toast("Error al eliminar: "+e.message,"#c62828"); }
 }
 
 // ════════════════════════════════════════════════════════

@@ -378,6 +378,27 @@ tbody tr.seleccionada{background:var(--red-bg)!important;outline:1.5px solid #ef
 .deuda-barra-wrap{background:var(--surface2);border:1px solid var(--border);border-radius:50px;height:10px;overflow:hidden;margin-bottom:12px}
 .deuda-barra{height:100%;border-radius:50px;transition:width .6s ease}
 .deuda-acciones{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+/* Desglose vehículos en deuda-card */
+.deuda-vehiculos{margin-top:10px;border-top:1px solid var(--border);padding-top:10px;display:none}
+.deuda-veh-row{display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:var(--radius-sm);margin-bottom:4px;background:var(--surface2);font-size:12px}
+.deuda-veh-row:last-child{margin-bottom:0}
+.deuda-veh-nombre{flex:1;font-weight:600;color:var(--text)}
+.deuda-veh-stat{color:var(--text3);white-space:nowrap}
+.deuda-veh-coste{font-weight:800;color:var(--accent);white-space:nowrap}
+.badge-empresa{background:#dbeafe;color:#1e40af;padding:2px 7px;border-radius:20px;font-size:10px;font-weight:700}
+.badge-personal{background:var(--green-bg);color:var(--green);padding:2px 7px;border-radius:20px;font-size:10px;font-weight:700}
+/* Modal detalle repostajes trabajador */
+.modal-det-overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:10000;display:none;align-items:flex-start;justify-content:center;padding:20px;overflow-y:auto}
+.modal-det-overlay.open{display:flex}
+.modal-det{background:var(--surface);border-radius:var(--radius);padding:24px;width:100%;max-width:700px;margin:auto;box-shadow:0 20px 60px rgba(0,0,0,.3);position:relative}
+.modal-det-close{position:absolute;top:14px;right:14px;background:none;border:none;font-size:20px;cursor:pointer;color:var(--text3);line-height:1}
+.modal-det-veh-section{margin-bottom:18px}
+.modal-det-veh-header{display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--surface2);border-radius:var(--radius-sm);font-weight:700;font-size:13px;color:var(--text);margin-bottom:6px;border-left:3px solid var(--accent)}
+.modal-det-rep-row{display:flex;align-items:center;gap:6px;padding:6px 10px;border-bottom:1px solid var(--border);font-size:12px;color:var(--text2)}
+.modal-det-rep-row:last-child{border-bottom:none}
+.modal-det-rep-fecha{color:var(--text3);white-space:nowrap;min-width:70px}
+.modal-det-rep-lit{font-weight:700;color:var(--blue,#1976d2);white-space:nowrap}
+.modal-det-rep-coste{font-weight:800;color:var(--accent);white-space:nowrap;margin-left:auto}
 .btn-abonar{background:linear-gradient(135deg,var(--green),#388e3c);color:white;border:none;border-radius:var(--radius-sm);padding:7px 16px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;box-shadow:0 2px 8px rgba(46,125,50,.3);transition:all .15s}
 .btn-abonar:hover{transform:translateY(-1px);box-shadow:0 4px 14px rgba(46,125,50,.4)}
 .btn-saldar{background:var(--blue-bg);color:var(--blue);border:1px solid #90caf9;border-radius:var(--radius-sm);padding:7px 16px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;transition:all .15s}
@@ -733,6 +754,16 @@ tbody tr.seleccionada{background:var(--red-bg)!important;outline:1.5px solid #ef
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;padding:8px 24px 12px" id="deudas-stats-row"></div>
     <!-- Cards de deudas por trabajador -->
     <div style="padding:0 24px 28px" id="deudas-list"></div>
+  </div>
+</div>
+
+<!-- MODAL: DETALLE REPOSTAJES TRABAJADOR -->
+<div class="modal-det-overlay" id="modal-det-repostajes">
+  <div class="modal-det">
+    <button class="modal-det-close" onclick="cerrarDetRepostajes()">✕</button>
+    <h2 style="margin:0 0 4px;font-size:16px;color:var(--text)" id="modal-det-titulo">📋 Repostajes del trabajador</h2>
+    <div id="modal-det-subtitulo" style="font-size:12px;color:var(--text3);margin-bottom:16px"></div>
+    <div id="modal-det-body" style="max-height:60vh;overflow-y:auto"></div>
   </div>
 </div>
 
@@ -3206,7 +3237,7 @@ function poblarFiltroDeudas(){
  * - pendiente: totalDebe - totalAbonado
  */
 function calcularResumenDeudas(){
-  const mapa = {}; // uid → { nombre, color, totalDebe, totalAbonado, nRepostajes, abonos[] }
+  const mapa = {}; // uid → { nombre, color, totalDebe, totalAbonado, nRepostajes, abonos[], vehiculos:{} }
 
   // Sumar costes de repostajes
   registros.forEach(r=>{
@@ -3221,7 +3252,8 @@ function calcularResumenDeudas(){
         totalDebe: 0,
         totalAbonado: 0,
         nRepostajes: 0,
-        abonos: []
+        abonos: [],
+        vehiculos: {}   // nombre → {litros, coste, nRep, registros[]}
       };
     }
     // Calcular coste: precio guardado × litros, o precio recarga vigente × litros
@@ -3230,6 +3262,14 @@ function calcularResumenDeudas(){
     const coste  = r.costeTotal  || (precio > 0 ? Math.round(Math.round(precio*1000)*Math.round((r.litros||0)*1000)/1_000_000*100)/100 : 0);
     mapa[uid].totalDebe    += coste;
     mapa[uid].nRepostajes  += 1;
+
+    // Desglose por vehículo
+    const vNombre = r.vehiculo || "Sin vehículo";
+    if(!mapa[uid].vehiculos[vNombre]) mapa[uid].vehiculos[vNombre] = {litros:0, coste:0, nRep:0, registros:[]};
+    mapa[uid].vehiculos[vNombre].litros    += r.litros||0;
+    mapa[uid].vehiculos[vNombre].coste     += coste;
+    mapa[uid].vehiculos[vNombre].nRep      += 1;
+    mapa[uid].vehiculos[vNombre].registros.push({...r, _costeCalculado: coste});
   });
 
   return mapa;
@@ -3252,7 +3292,8 @@ async function cargarAbonos(mapa){
           totalDebe: 0,
           totalAbonado: 0,
           nRepostajes: 0,
-          abonos: []
+          abonos: [],
+          vehiculos: {}
         };
       }
       mapa[uid].totalAbonado += ab.importe||0;
@@ -3324,6 +3365,26 @@ async function renderDeudas(){
     return;
   }
 
+  // Iconos por tipo de vehículo
+  const _iconoVeh = nombre => {
+    const n = (nombre||"").toUpperCase();
+    if(n.includes("FURGON")) return "🚐";
+    if(n.includes("CAMION") || n.includes("CAMIÓN")) return "🚛";
+    if(n.includes("MAQUIN")) return "⚙️";
+    if(n.includes("PERSONAL")) return "🚗";
+    return "🚗";
+  };
+  // Detectar si un vehículo es de empresa (no se cobra al trabajador)
+  const _esEmpresa = nombre => {
+    const n = (nombre||"").toUpperCase();
+    // Vehículo es de empresa si NO es "VEHICULO PERSONAL"
+    // y es una furgoneta, camión, maquinaria, o vehículo comercial
+    if(n.includes("PERSONAL")) return false;
+    if(n.includes("FURGON") || n.includes("CAMION") || n.includes("CAMIÓN") ||
+       n.includes("MAQUIN") || n.includes("COMERCIAL")) return true;
+    return false;
+  };
+
   wrap.innerHTML = trabajadores.map(t=>{
     const pendiente = Math.max(0, t.totalDebe - t.totalAbonado);
     const pct       = t.totalDebe > 0 ? Math.min(100, Math.round((t.totalAbonado / t.totalDebe)*100)) : 100;
@@ -3344,12 +3405,25 @@ async function renderDeudas(){
       </div>`;
     }).join("") : '<div style="color:var(--text3);font-size:12px;font-style:italic;padding:8px 0">Sin abonos registrados</div>';
 
+    // Desglose de vehículos ordenado por coste desc
+    const vehs = Object.entries(t.vehiculos||{}).sort((a,b)=>b[1].coste-a[1].coste);
+    const vehsHTML = vehs.length ? vehs.map(([vNombre, vd])=>{
+      const esEmp = _esEmpresa(vNombre);
+      return `<div class="deuda-veh-row">
+        <span style="font-size:16px">${_iconoVeh(vNombre)}</span>
+        <span class="deuda-veh-nombre">${_esc(vNombre)}</span>
+        <span class="${esEmp?'badge-empresa':'badge-personal'}">${esEmp?'🏢 Empresa':'👤 Personal'}</span>
+        <span class="deuda-veh-stat">${vd.nRep} rep · ${vd.litros.toFixed(1)} L</span>
+        <span class="deuda-veh-coste">${vd.coste.toLocaleString("es-ES",{minimumFractionDigits:2,maximumFractionDigits:2})} €</span>
+      </div>`;
+    }).join("") : '<div style="color:var(--text3);font-size:12px;font-style:italic;padding:4px 0">Sin vehículos registrados</div>';
+
     return `<div class="deuda-card ${cardClass}">
       <div class="deuda-card-header">
         <div class="deuda-avatar" style="background:${t.color}">${(t.nombre||"?")[0].toUpperCase()}</div>
         <div style="flex:1">
           <div class="deuda-nombre">${_esc(t.nombre)}</div>
-          <div class="deuda-meta">${t.nRepostajes} repostaje${t.nRepostajes!==1?"s":""} registrado${t.nRepostajes!==1?"s":""}</div>
+          <div class="deuda-meta">${t.nRepostajes} repostaje${t.nRepostajes!==1?"s":""} · ${vehs.length} vehículo${vehs.length!==1?"s":""}</div>
         </div>
         <div style="text-align:right">
           ${saldado
@@ -3383,10 +3457,19 @@ async function renderDeudas(){
         </div>
       </div>
 
+      <!-- Desglose vehículos colapsable -->
+      <div class="deuda-vehiculos" id="veh-${t.uid}">
+        <div style="font-size:11px;font-weight:700;color:var(--text2);margin-bottom:6px;text-transform:uppercase;letter-spacing:.04em">🚗 Repostajes por vehículo</div>
+        ${vehsHTML}
+        <div style="font-size:10px;color:var(--text3);margin-top:6px;font-style:italic">ℹ️ Los vehículos de empresa pueden excluirse del cobro según criterio del administrador</div>
+      </div>
+
       <div class="deuda-acciones">
         ${!saldado ? `<button class="btn-abonar" onclick="abrirModalAbono('${t.uid}','${_esc(t.nombre)}',${pendiente.toFixed(2)})">💶 Registrar abono</button>` : ""}
         ${!saldado ? `<button class="btn-saldar" onclick="saldaTotal('${t.uid}','${_esc(t.nombre)}',${pendiente.toFixed(2)})">✅ Saldar todo (${pendiente.toLocaleString("es-ES",{minimumFractionDigits:2,maximumFractionDigits:2})} €)</button>` : ""}
-        ${abonosOrden.length ? `<button class="btn-ver-abonos" onclick="toggleHistorialAbonos('hist-${t.uid}')">📄 Ver historial (${abonosOrden.length})</button>` : ""}
+        <button class="btn-ver-abonos" onclick="toggleVehDesglose('veh-${t.uid}',this)">🚗 Ver por vehículo (${vehs.length})</button>
+        <button class="btn-ver-abonos" onclick="abrirDetRepostajes('${t.uid}')">📋 Ver todos los repostajes</button>
+        ${abonosOrden.length ? `<button class="btn-ver-abonos" onclick="toggleHistorialAbonos('hist-${t.uid}')">📄 Abonos (${abonosOrden.length})</button>` : ""}
       </div>
 
       <div class="deuda-historial" id="hist-${t.uid}">
@@ -3402,6 +3485,92 @@ function toggleHistorialAbonos(id){
   if(!el) return;
   el.style.display = el.style.display === "block" ? "none" : "block";
 }
+
+function toggleVehDesglose(id, btn){
+  const el = document.getElementById(id);
+  if(!el) return;
+  const open = el.style.display === "block";
+  el.style.display = open ? "none" : "block";
+  if(btn) btn.textContent = open ? btn.textContent.replace("▲","▼") : btn.textContent.replace("▼","▲");
+}
+
+// ─── Modal detalle de repostajes por trabajador ────────────────────────────
+let _detMapaCache = null; // guardamos el mapa para poder abrir el modal sin recalcular
+
+function abrirDetRepostajes(uid){
+  // Obtener el mapa actual (ya calculado en renderDeudas — lo buscamos en el DOM)
+  // Lo recalculamos directamente desde los registros globales para no depender de estado
+  const u = usuarios.find(x=>x.id===uid);
+  const nombre = u?.nombre || uid;
+
+  const iconoVeh = n => {
+    const nU = (n||"").toUpperCase();
+    if(nU.includes("FURGON")) return "🚐";
+    if(nU.includes("CAMION")||nU.includes("CAMIÓN")) return "🚛";
+    if(nU.includes("MAQUIN")) return "⚙️";
+    return "🚗";
+  };
+  const esEmpresa = n => {
+    const nU = (n||"").toUpperCase();
+    if(nU.includes("PERSONAL")) return false;
+    return nU.includes("FURGON")||nU.includes("CAMION")||nU.includes("CAMIÓN")||nU.includes("MAQUIN")||nU.includes("COMERCIAL");
+  };
+
+  // Agrupar repostajes de este trabajador por vehículo
+  const vehMap = {};
+  registros.filter(r=>r.trabajadorUid===uid).forEach(r=>{
+    const fechaRep = _tsToDate(r.fecha);
+    const precio = r.precioLitro || _precioUltimaRecarga(fechaRep) || 0;
+    const coste  = r.costeTotal  || (precio>0 ? Math.round(Math.round(precio*1000)*Math.round((r.litros||0)*1000)/1_000_000*100)/100 : 0);
+    const vNombre = r.vehiculo || "Sin vehículo";
+    if(!vehMap[vNombre]) vehMap[vNombre] = {litros:0, coste:0, nRep:0, reps:[]};
+    vehMap[vNombre].litros += r.litros||0;
+    vehMap[vNombre].coste  += coste;
+    vehMap[vNombre].nRep   += 1;
+    vehMap[vNombre].reps.push({fecha:r.fecha, litros:r.litros||0, coste, notas:r.notas||""});
+  });
+
+  const vehs = Object.entries(vehMap).sort((a,b)=>b[1].coste-a[1].coste);
+  const totalRep  = vehs.reduce((s,[,v])=>s+v.nRep,0);
+  const totalLit  = vehs.reduce((s,[,v])=>s+v.litros,0);
+  const totalCoste= vehs.reduce((s,[,v])=>s+v.coste,0);
+
+  document.getElementById("modal-det-titulo").textContent = `📋 Repostajes de ${nombre}`;
+  document.getElementById("modal-det-subtitulo").innerHTML =
+    `${totalRep} repostaje${totalRep!==1?"s":""} · ${totalLit.toFixed(1)} L · <strong style="color:var(--accent)">${totalCoste.toLocaleString("es-ES",{minimumFractionDigits:2,maximumFractionDigits:2})} € total</strong>`;
+
+  document.getElementById("modal-det-body").innerHTML = vehs.length ? vehs.map(([vNombre, vd])=>{
+    const emp = esEmpresa(vNombre);
+    const repsOrdenadas = vd.reps.slice().sort((a,b)=>_tsToDate(b.fecha)-_tsToDate(a.fecha));
+    return `<div class="modal-det-veh-section">
+      <div class="modal-det-veh-header">
+        <span style="font-size:18px">${iconoVeh(vNombre)}</span>
+        <span style="flex:1">${_esc(vNombre)}</span>
+        <span class="${emp?'badge-empresa':'badge-personal'}">${emp?'🏢 Empresa':'👤 Personal'}</span>
+        <span style="font-size:11px;color:var(--text3);margin-left:8px">${vd.nRep} rep · ${vd.litros.toFixed(1)} L</span>
+        <span style="font-weight:800;color:var(--accent);margin-left:10px">${vd.coste.toLocaleString("es-ES",{minimumFractionDigits:2,maximumFractionDigits:2})} €</span>
+      </div>
+      ${repsOrdenadas.map(rep=>`
+        <div class="modal-det-rep-row">
+          <span class="modal-det-rep-fecha">📅 ${_fmtFechaCorta(rep.fecha)}</span>
+          <span class="modal-det-rep-lit">⛽ ${rep.litros.toFixed(2)} L</span>
+          ${rep.notas?`<span style="color:var(--text3);font-size:11px;flex:1;padding:0 8px">${_esc(rep.notas)}</span>`:'<span style="flex:1"></span>'}
+          <span class="modal-det-rep-coste">${rep.coste.toLocaleString("es-ES",{minimumFractionDigits:2,maximumFractionDigits:2})} €</span>
+        </div>`).join("")}
+    </div>`;
+  }).join("") : '<div style="color:var(--text3);font-size:13px;padding:16px;text-align:center">Sin repostajes registrados</div>';
+
+  document.getElementById("modal-det-repostajes").classList.add("open");
+}
+
+function cerrarDetRepostajes(){
+  document.getElementById("modal-det-repostajes").classList.remove("open");
+}
+
+// Cerrar modal al click en overlay
+document.getElementById("modal-det-repostajes").addEventListener("click", function(e){
+  if(e.target===this) cerrarDetRepostajes();
+});
 
 function abrirModalAbono(uid, nombre, pendiente){
   abonoTrabajadorUid = uid;

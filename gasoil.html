@@ -2011,7 +2011,7 @@ function renderAdminVehiculos(){
 
 // ── Activar un vehículo del catálogo fijo (lo crea en Firestore) ──────────────
 async function activarVehiculoFijo(nombre){
-  if(!confirm(\`¿Activar el vehículo "${nombre}"?\n\nAparecerá disponible para todos los trabajadores.\`)) return;
+  if(!confirm(`¿Activar el vehículo "${nombre}"?\n\nAparecerá disponible para todos los trabajadores.`)) return;
   const cat = VEHICULOS_CATALOGO.find(c => c.nombre === nombre);
   try{
     await db.collection("vehiculos").add({
@@ -2021,16 +2021,16 @@ async function activarVehiculoFijo(nombre){
       creadoEn:  firebase.firestore.FieldValue.serverTimestamp(),
       activadoDesde: 'catalogo'
     });
-    toast(\`✅ "${nombre}" activado correctamente\`, "#2e7d32");
+    toast(`✅ "${nombre}" activado correctamente`, "#2e7d32");
   }catch(e){ toast("Error al activar: " + e.message, "#c62828"); }
 }
 
 // ── Desactivar un vehículo del catálogo fijo (lo elimina de Firestore) ────────
 async function desactivarVehiculoFijo(id, nombre){
-  if(!confirm(\`¿Desactivar el vehículo "${nombre}"?\n\nNo aparecerá en los formularios de repostaje, pero podrás reactivarlo cuando quieras.\`)) return;
+  if(!confirm(`¿Desactivar el vehículo "${nombre}"?\n\nNo aparecerá en los formularios de repostaje, pero podrás reactivarlo cuando quieras.`)) return;
   try{
     await db.collection("vehiculos").doc(id).delete();
-    toast(\`🚫 "${nombre}" desactivado\`, "#e65c00");
+    toast(`🚫 "${nombre}" desactivado`, "#e65c00");
   }catch(e){ toast("Error al desactivar: " + e.message, "#c62828"); }
 }
 

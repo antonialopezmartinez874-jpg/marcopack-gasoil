@@ -686,9 +686,26 @@ tbody tr.seleccionada{background:var(--red-bg)!important;outline:1.5px solid #ef
     </div>
     <!-- Vehículos -->
     <div style="padding:8px 24px 28px">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
-        <div style="font-size:13px;font-weight:700;color:var(--text)">🚗 Vehículos registrados</div>
-        <button class="btn-save" onclick="abrirModalVehiculo()" style="padding:7px 16px;font-size:12px">+ Nuevo vehículo</button>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px">
+        <div>
+          <div style="font-size:13px;font-weight:700;color:var(--text)">🚗 Catálogo completo de vehículos</div>
+          <div style="font-size:11px;color:var(--text3);margin-top:2px">Activa, edita o da de baja cualquier vehículo del listado</div>
+        </div>
+        <button class="btn-save" onclick="abrirModalVehiculo()" style="padding:7px 16px;font-size:12px">＋ Nuevo vehículo</button>
+      </div>
+      <div style="display:flex;gap:5px;margin-bottom:12px;flex-wrap:wrap" id="veh-tabs">
+        <button id="veh-tab-todos"     onclick="setVehTab('todos')"
+          style="padding:5px 14px;border-radius:20px;font-size:12px;font-weight:700;cursor:pointer;border:1px solid var(--accent);background:var(--accent);color:white;font-family:inherit;transition:all .15s">
+          Todos
+        </button>
+        <button id="veh-tab-activos"   onclick="setVehTab('activos')"
+          style="padding:5px 14px;border-radius:20px;font-size:12px;font-weight:700;cursor:pointer;border:1px solid var(--border);background:var(--surface2);color:var(--text2);font-family:inherit;transition:all .15s">
+          ✅ Activos
+        </button>
+        <button id="veh-tab-inactivos" onclick="setVehTab('inactivos')"
+          style="padding:5px 14px;border-radius:20px;font-size:12px;font-weight:700;cursor:pointer;border:1px solid #fca5a5;background:var(--red-bg);color:var(--red);font-family:inherit;transition:all .15s">
+          🚫 Inactivos
+        </button>
       </div>
       <div id="admin-vehiculos-list"></div>
     </div>
@@ -1581,27 +1598,30 @@ function poblarSelectTrabajadores(){
 }
 
 function poblarSelectVehiculos(){
-  // Lista fija de vehículos de empresa
-  const listaFija = [
-    {nombre:"VEHICULO PERSONAL",   icono:"🚗"},
-    {nombre:"VEHICULO COMERCIAL",  icono:"🚗"},
-    {nombre:"SEAT LEON",           icono:"🚗"},
-    {nombre:"SKODA",               icono:"🚗"},
-    {nombre:"FURGONETA VOLKSWAGEN",icono:"🚐"},
-    {nombre:"FURGONETA FORD",      icono:"🚐"},
-    {nombre:"FURGONETA RENAULT",   icono:"🚐"},
-    {nombre:"FURGONETA CITROEN",   icono:"🚐"}
-  ];
+  // Usar VEHICULOS_CATALOGO como base → solo los que están activos en Firestore
+  // + los vehículos manuales de Firebase
   const iconosTipo = {"vehiculo":"🚗","furgoneta":"🚐","camion":"🚛","maquinaria":"⚙️","otro":"🔧"};
 
-  // Construir lista combinada: fijos primero, luego los de Firebase que no estén ya
-  const nombresFijos = listaFija.map(v=>v.nombre.toUpperCase());
-  const vehiculosFirebase = vehiculos.filter(v=>!nombresFijos.includes((v.nombre||"").toUpperCase()));
+  // Vehículos del catálogo predefinido que están activos (existen en Firebase)
+  const nombresCatalogo = VEHICULOS_CATALOGO.map(c => c.nombre.toUpperCase());
+  const catalogoActivos = VEHICULOS_CATALOGO.filter(cat =>
+    vehiculos.some(v => v.nombre.toUpperCase() === cat.nombre.toUpperCase())
+  );
 
-  let opts = listaFija.map(v=>`<option value="${v.nombre}">${v.icono} ${v.nombre}</option>`).join("");
-  if(vehiculosFirebase.length){
-    opts += `<optgroup label="— Vehículos registrados —">`;
-    opts += vehiculosFirebase.map(v=>`<option value="${v.nombre}">${iconosTipo[v.tipo]||"🚗"} ${v.nombre}</option>`).join("");
+  // Vehículos manuales (no están en el catálogo fijo)
+  const vehiculosExtra = vehiculos.filter(v =>
+    !nombresCatalogo.includes((v.nombre||"").toUpperCase())
+  );
+
+  let opts = catalogoActivos.map(cat => {
+    const fbV = vehiculos.find(v => v.nombre.toUpperCase() === cat.nombre.toUpperCase());
+    const icono = iconosTipo[fbV?.tipo || cat.tipo] || cat.icono || "🚗";
+    return `<option value="${cat.nombre}">${icono} ${cat.nombre}</option>`;
+  }).join("");
+
+  if(vehiculosExtra.length){
+    opts += `<optgroup label="— Vehículos personalizados —">`;
+    opts += vehiculosExtra.map(v=>`<option value="${v.nombre}">${iconosTipo[v.tipo]||"🔧"} ${v.nombre}</option>`).join("");
     opts += `</optgroup>`;
   }
 
@@ -1792,34 +1812,227 @@ function renderAdminUsuarios(){
   }).join("");
 }
 
+// ═══════════════════════════════════════════════════════════════════════════
+//  CATÁLOGO COMPLETO DE VEHÍCULOS — Admin
+//  Muestra fijos predefinidos + los guardados en Firebase
+//  Con pestañas Todos / Activos / Inactivos y acciones completas
+// ═══════════════════════════════════════════════════════════════════════════
+
+// Catálogo predefinido de vehículos de empresa
+const VEHICULOS_CATALOGO = [
+  {nombre:"VEHICULO PERSONAL",    tipo:"vehiculo",   icono:"🚗"},
+  {nombre:"VEHICULO COMERCIAL",   tipo:"vehiculo",   icono:"🚗"},
+  {nombre:"SEAT LEON",            tipo:"vehiculo",   icono:"🚗"},
+  {nombre:"SKODA",                tipo:"vehiculo",   icono:"🚗"},
+  {nombre:"FURGONETA VOLKSWAGEN", tipo:"furgoneta",  icono:"🚐"},
+  {nombre:"FURGONETA FORD",       tipo:"furgoneta",  icono:"🚐"},
+  {nombre:"FURGONETA RENAULT",    tipo:"furgoneta",  icono:"🚐"},
+  {nombre:"FURGONETA CITROEN",    tipo:"furgoneta",  icono:"🚐"}
+];
+
+// Estado de pestaña activa del catálogo
+window._vehTab = 'todos';
+
+function setVehTab(tab){
+  window._vehTab = tab;
+  // Estilos de pestañas
+  ['todos','activos','inactivos'].forEach(t => {
+    const btn = document.getElementById('veh-tab-' + t);
+    if(!btn) return;
+    if(t === tab){
+      btn.style.background  = t === 'inactivos' ? 'var(--red)'    : 'var(--accent)';
+      btn.style.color       = 'white';
+      btn.style.borderColor = t === 'inactivos' ? 'var(--red)'    : 'var(--accent)';
+    } else {
+      btn.style.background  = t === 'inactivos' ? 'var(--red-bg)' : 'var(--surface2)';
+      btn.style.color       = t === 'inactivos' ? 'var(--red)'    : 'var(--text2)';
+      btn.style.borderColor = t === 'inactivos' ? '#fca5a5'       : 'var(--border)';
+    }
+  });
+  renderAdminVehiculos();
+}
+
 function renderAdminVehiculos(){
-  const wrap=document.getElementById("admin-vehiculos-list"); if(!wrap) return;
-  const iconos={"vehiculo":"🚗","furgoneta":"🚐","camion":"🚛","maquinaria":"⚙️","otro":"🔧"};
-  const tiposLabel={"vehiculo":"Turismo","furgoneta":"Furgoneta","camion":"Camión","maquinaria":"Maquinaria","otro":"Otro"};
-  if(!vehiculos.length){
-    wrap.innerHTML=`<div style="text-align:center;padding:32px 16px;color:var(--text3)">
+  const wrap = document.getElementById("admin-vehiculos-list");
+  if(!wrap) return;
+
+  const iconosTipo  = {vehiculo:"🚗", furgoneta:"🚐", camion:"🚛", maquinaria:"⚙️", otro:"🔧"};
+  const tiposLabel  = {vehiculo:"Turismo", furgoneta:"Furgoneta", camion:"Camión", maquinaria:"Maquinaria", otro:"Otro"};
+  const tab         = window._vehTab || 'todos';
+
+  // ── Construir catálogo unificado ──────────────────────────────────────────
+  // Cada ítem: { id?, nombre, tipo, icono, asignadoA?, origen:'fijo'|'firebase', activo:bool }
+  const nombresFirebase = vehiculos.map(v => (v.nombre||'').toUpperCase());
+
+  // 1. Vehículos predefinidos (fijos), marcando si están activos en Firebase o desactivados
+  const itemsFijos = VEHICULOS_CATALOGO.map(cat => {
+    const enFirebase = vehiculos.find(v => v.nombre.toUpperCase() === cat.nombre.toUpperCase());
+    return {
+      id:        enFirebase?.id || null,
+      nombre:    cat.nombre,
+      tipo:      enFirebase?.tipo || cat.tipo,
+      icono:     iconosTipo[enFirebase?.tipo || cat.tipo] || cat.icono,
+      asignadoA: enFirebase?.asignadoA || null,
+      origen:    'fijo',
+      activo:    !!enFirebase   // true si existe en Firestore
+    };
+  });
+
+  // 2. Vehículos creados manualmente en Firebase que NO están en el catálogo fijo
+  const itemsExtra = vehiculos
+    .filter(v => !VEHICULOS_CATALOGO.some(c => c.nombre.toUpperCase() === (v.nombre||'').toUpperCase()))
+    .map(v => ({
+      id:        v.id,
+      nombre:    v.nombre || '—',
+      tipo:      v.tipo || 'vehiculo',
+      icono:     iconosTipo[v.tipo] || '🔧',
+      asignadoA: v.asignadoA || null,
+      origen:    'firebase',
+      activo:    true
+    }));
+
+  let todos = [...itemsFijos, ...itemsExtra];
+
+  // ── Filtrar por pestaña ───────────────────────────────────────────────────
+  if(tab === 'activos')   todos = todos.filter(v => v.activo);
+  if(tab === 'inactivos') todos = todos.filter(v => !v.activo);
+
+  // ── Contadores para mostrar en pestañas ──────────────────────────────────
+  const nTodos    = itemsFijos.length + itemsExtra.length;
+  const nActivos  = [...itemsFijos, ...itemsExtra].filter(v => v.activo).length;
+  const nInact    = nTodos - nActivos;
+
+  // Actualizar labels de pestañas con contadores
+  const tTodos = document.getElementById('veh-tab-todos');
+  const tAct   = document.getElementById('veh-tab-activos');
+  const tInact = document.getElementById('veh-tab-inactivos');
+  if(tTodos) tTodos.textContent = `Todos (${nTodos})`;
+  if(tAct)   tAct.textContent   = `✅ Activos (${nActivos})`;
+  if(tInact) tInact.textContent = `🚫 Inactivos (${nInact})`;
+
+  // ── Sin resultados ────────────────────────────────────────────────────────
+  if(!todos.length){
+    wrap.innerHTML = `<div style="text-align:center;padding:32px 16px;color:var(--text3)">
       <div style="font-size:36px;margin-bottom:8px">🚗</div>
-      <div style="font-size:13px;font-weight:600">Sin vehículos registrados</div>
-      <div style="font-size:12px;margin-top:4px">Pulsa "+ Nuevo vehículo" para añadir el primero</div>
+      <div style="font-size:13px;font-weight:600">
+        ${tab === 'inactivos' ? 'No hay vehículos inactivos' : 'Sin vehículos en esta categoría'}
+      </div>
     </div>`;
     return;
   }
-  wrap.innerHTML = vehiculos.map(v=>{
-    const asig = v.asignadoA ? (usuarios.find(u=>u.id===v.asignadoA)?.nombre || v.asignadoA) : null;
-    return `<div class="user-item" style="transition:all .2s">
-      <div style="font-size:28px;flex-shrink:0;width:38px;text-align:center">${iconos[v.tipo]||"🔧"}</div>
-      <div class="user-info">
-        <div class="user-name">${_esc(v.nombre||"—")}</div>
-        <div class="user-email">${tiposLabel[v.tipo]||"Vehículo"}${asig?' · <span style="color:var(--accent);font-weight:600">👤 '+_esc(asig)+'</span>':' · <span style="color:var(--text3)">Sin asignar</span>'}</div>
+
+  // ── Renderizar filas ──────────────────────────────────────────────────────
+  let html = '';
+  let seccionActual = null;
+
+  todos.forEach(v => {
+    // Cabecera de sección
+    const seccion = v.origen === 'fijo' ? 'fijo' : 'extra';
+    if(seccion !== seccionActual && tab === 'todos'){
+      seccionActual = seccion;
+      if(seccion === 'fijo'){
+        html += `<div style="padding:6px 14px 5px;background:linear-gradient(90deg,var(--fuel-bg),var(--surface2));
+                             border-bottom:1px solid var(--border);border-top:1px solid var(--border);
+                             border-radius:8px 8px 0 0;margin-bottom:0">
+          <span style="font-size:11px;font-weight:800;color:var(--text2);text-transform:uppercase;
+                       letter-spacing:.04em">📋 Vehículos del catálogo predefinido</span>
+        </div>`;
+      } else {
+        html += `<div style="padding:6px 14px 5px;background:linear-gradient(90deg,var(--green-bg),var(--surface2));
+                             border-bottom:1px solid var(--border);border-top:1px solid var(--border);margin-top:10px">
+          <span style="font-size:11px;font-weight:800;color:var(--green);text-transform:uppercase;
+                       letter-spacing:.04em">⭐ Vehículos añadidos manualmente</span>
+        </div>`;
+      }
+    }
+
+    const asigNombre = v.asignadoA ? (usuarios.find(u => u.id === v.asignadoA)?.nombre || v.asignadoA) : null;
+    const tipoLabel  = tiposLabel[v.tipo] || 'Vehículo';
+
+    const badgeActivo = v.activo
+      ? `<span style="background:var(--green-bg);color:var(--green);border-radius:20px;padding:2px 9px;
+                      font-size:10px;font-weight:700;white-space:nowrap;flex-shrink:0">✅ Activo</span>`
+      : `<span style="background:var(--red-bg);color:var(--red);border-radius:20px;padding:2px 9px;
+                      font-size:10px;font-weight:700;white-space:nowrap;flex-shrink:0">🚫 Inactivo</span>`;
+
+    // Botones de acción según estado y origen
+    let acciones = '';
+
+    if(v.activo){
+      // Activo → puede editar y desactivar
+      acciones += `<button class="btn-user-action btn-user-pass"
+        onclick="editarVehiculo('${v.id}')" title="Editar vehículo"
+        style="font-size:11px;padding:5px 10px">✏️ Editar</button>`;
+
+      if(v.origen === 'fijo'){
+        // Fijo activo → desactivar lo elimina de Firestore
+        acciones += `<button class="btn-user-action btn-user-baja"
+          onclick="desactivarVehiculoFijo('${v.id}','${v.nombre.replace(/'/g,"\'")}')"
+          title="Desactivar — no aparecerá en los registros pero podrás reactivarlo"
+          style="font-size:11px;padding:5px 10px">🚫 Desactivar</button>`;
+      } else {
+        // Firebase extra activo → borrar definitivamente
+        acciones += `<button class="btn-user-action btn-user-baja"
+          onclick="confirmarBorrarVehiculo('${v.id}')"
+          title="Eliminar vehículo definitivamente"
+          style="font-size:11px;padding:5px 10px">🗑 Borrar</button>`;
+      }
+    } else {
+      // Inactivo (solo los fijos pueden estar inactivos) → activar
+      acciones += `<button
+        onclick="activarVehiculoFijo('${v.nombre.replace(/'/g,"\'")}')"
+        title="Activar — volverá a aparecer en los registros"
+        style="background:var(--green-bg);color:var(--green);border:1px solid #a5d6a7;
+               border-radius:var(--radius-sm);padding:5px 13px;font-size:11px;font-weight:700;
+               cursor:pointer;font-family:inherit;white-space:nowrap">✅ Activar</button>`;
+    }
+
+    html += `<div class="user-item" style="transition:all .2s;opacity:${v.activo?1:.65}">
+      <div style="font-size:26px;flex-shrink:0;width:36px;text-align:center;line-height:1">${v.icono}</div>
+      <div class="user-info" style="flex:1;min-width:0">
+        <div class="user-name" style="display:flex;align-items:center;gap:7px;flex-wrap:wrap">
+          ${_esc(v.nombre)}
+          ${badgeActivo}
+        </div>
+        <div class="user-email">
+          ${tipoLabel}
+          ${asigNombre ? `· <span style="color:var(--accent);font-weight:600">👤 ${_esc(asigNombre)}</span>` : '· <span style="color:var(--text3)">Sin asignar</span>'}
+          ${v.origen === 'fijo' ? '' : '<span style="color:var(--green);font-size:10px;font-weight:700;margin-left:4px">⭐ Manual</span>'}
+        </div>
       </div>
-      <div class="user-actions">
-        <button class="btn-user-action btn-user-pass" onclick="editarVehiculo('${v.id}')" title="Editar vehículo">✏️ Editar</button>
-        <button class="btn-user-action btn-user-baja" onclick="confirmarBorrarVehiculo('${v.id}')" title="Eliminar vehículo">🗑 Borrar</button>
+      <div class="user-actions" style="flex-shrink:0">
+        ${acciones}
       </div>
     </div>`;
-  }).join("");
+  });
+
+  wrap.innerHTML = html;
 }
 
+// ── Activar un vehículo del catálogo fijo (lo crea en Firestore) ──────────────
+async function activarVehiculoFijo(nombre){
+  if(!confirm(\`¿Activar el vehículo "${nombre}"?\n\nAparecerá disponible para todos los trabajadores.\`)) return;
+  const cat = VEHICULOS_CATALOGO.find(c => c.nombre === nombre);
+  try{
+    await db.collection("vehiculos").add({
+      nombre,
+      tipo:      cat?.tipo || 'vehiculo',
+      asignadoA: '',
+      creadoEn:  firebase.firestore.FieldValue.serverTimestamp(),
+      activadoDesde: 'catalogo'
+    });
+    toast(\`✅ "${nombre}" activado correctamente\`, "#2e7d32");
+  }catch(e){ toast("Error al activar: " + e.message, "#c62828"); }
+}
+
+// ── Desactivar un vehículo del catálogo fijo (lo elimina de Firestore) ────────
+async function desactivarVehiculoFijo(id, nombre){
+  if(!confirm(\`¿Desactivar el vehículo "${nombre}"?\n\nNo aparecerá en los formularios de repostaje, pero podrás reactivarlo cuando quieras.\`)) return;
+  try{
+    await db.collection("vehiculos").doc(id).delete();
+    toast(\`🚫 "${nombre}" desactivado\`, "#e65c00");
+  }catch(e){ toast("Error al desactivar: " + e.message, "#c62828"); }
+}
 
 // ════════════════════════════════════════════════════════
 //  📷 SISTEMA DE FOTO — CONTADOR DEL DEPÓSITO

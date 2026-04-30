@@ -415,6 +415,14 @@ tbody tr.seleccionada{background:var(--red-bg)!important;outline:1.5px solid #ef
 .abono-item:last-child{border-bottom:none}
 .abono-metodo-badge{padding:2px 8px;border-radius:20px;font-size:10px;font-weight:700;background:var(--green-bg);color:var(--green)}
 
+/* ===== BOTONES ACCIÓN ADMIN (usuarios/vehículos) ===== */
+.user-actions{display:flex;gap:6px;flex-wrap:wrap;flex-shrink:0}
+.btn-user-action{border-radius:var(--radius-sm);padding:6px 12px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;border:1.5px solid;transition:all .15s;white-space:nowrap}
+.btn-user-pass{background:var(--blue-bg);color:var(--blue);border-color:#90caf9}
+.btn-user-pass:hover{background:var(--blue);color:white}
+.btn-user-baja{background:var(--red-bg);color:var(--red);border-color:#ef9a9a}
+.btn-user-baja:hover{background:var(--red);color:white}
+
 /* ===== RESPONSIVE ===== */
 @media(max-width:600px){
   .stats{grid-template-columns:repeat(2,1fr)}
@@ -938,6 +946,20 @@ tbody tr.seleccionada{background:var(--red-bg)!important;outline:1.5px solid #ef
   </div>
 </div>
 
+<!-- MODAL: BAJA / CONFIRMACIÓN -->
+<div class="modal-overlay" id="modal-baja-usuario">
+  <div class="modal" style="max-width:440px">
+    <button class="modal-close" onclick="cerrarModal('modal-baja-usuario')">✕</button>
+    <h2 id="modal-baja-titulo">⚠️ Confirmar acción</h2>
+    <div id="modal-baja-body" style="font-size:13px;color:var(--text2);line-height:1.6;margin-bottom:16px"></div>
+    <div id="modal-baja-error" class="error-msg"></div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="cerrarModal('modal-baja-usuario')">Cancelar</button>
+      <button id="modal-baja-btn" class="btn-delete">Confirmar</button>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL: REPOSTAJE -->
 <div class="modal-overlay" id="modal-repostaje">
   <div class="modal">
@@ -1207,6 +1229,7 @@ let sortAsc        = false;
 let editandoRepostaje = null;
 let editandoVehiculo  = null;
 let chartsInstancias  = {};
+let _bajaUsuarioUid   = null;  // uid de usuario en proceso de baja
 let fotoFileSeleccionada = null;   // File object pendiente de subir
 let fotoUrlExistente     = null;   // URL ya guardada (edición)
 let modoSeleccion        = false;  // Modo selección múltiple activo
@@ -1461,12 +1484,10 @@ async function doLogout(){
     await auth.signOut();
 
     // Restaurar contraseña en blanco (por seguridad) pero mantener email si "Recordar" activo
-    const passInp = document.getElementById('login-pass');
-    if(passInp) passInp.value = '';
+    const passEl = document.getElementById('login-pass');
+    if(passEl){ passEl.value = ''; passEl.type = 'password'; }
     const btnVer = document.getElementById('btn-ver-pass');
     if(btnVer) btnVer.textContent = '👁';
-    const passEl = document.getElementById('login-pass');
-    if(passEl) passEl.type = 'password';
 
   }catch(e){ console.error(e); }
 }
@@ -1695,7 +1716,7 @@ function renderRegistros(){
       const canEdit  = currentProfile?.rol==="admin"||esPropio;
       const seleccionada = idsSeleccionados.has(r.id);
       const cbCol = modoSeleccion ? `<td onclick="event.stopPropagation()"><input type="checkbox" class="cb-fila" ${seleccionada?"checked":""} onchange="toggleSeleccionFila('${r.id}',this.checked)"></td>` : "";
-      return `<tr style="--ec:${r.color||"var(--accent)"}" class="${seleccionada?"seleccionada":""}" onclick="${modoSeleccion?`toggleSeleccionFila('${r.id}',!document.querySelector('[data-id=\\'${r.id}\\']')?.checked)`:canEdit?`editarRepostaje('${r.id}')`:""}" data-id="${r.id}" title="${modoSeleccion?"Seleccionar/deseleccionar":canEdit?"Editar repostaje":""}">
+      return `<tr style="--ec:${r.color||"var(--accent)"}" class="${seleccionada?"seleccionada":""}" onclick="${modoSeleccion?`toggleSeleccionFila('${r.id}',!idsSeleccionados.has('${r.id}'))`:canEdit?`editarRepostaje('${r.id}')`:""}" data-id="${r.id}" title="${modoSeleccion?"Seleccionar/deseleccionar":canEdit?"Editar repostaje":""}">
         ${cbCol}
         <td><span style="font-family:'DM Mono',monospace;font-size:11px">${fecha}</span></td>
         <td>
@@ -1730,10 +1751,15 @@ function renderPaginacion(totalPag){
   const wrap = document.getElementById("pag-btns");
   if(!wrap) return;
   let html = `<button ${paginaActual<=1?"disabled":""} onclick="paginaActual--;renderRegistros()">‹</button>`;
-  for(let i=1;i<=Math.min(totalPag,7);i++){
+  // Mostrar ventana de páginas centrada en la actual
+  const delta = 2;
+  const inicio = Math.max(1, paginaActual - delta);
+  const fin    = Math.min(totalPag, paginaActual + delta);
+  if(inicio > 1){ html += `<button onclick="paginaActual=1;renderRegistros()">1</button>`; if(inicio>2) html+=`<button disabled>…</button>`; }
+  for(let i=inicio;i<=fin;i++){
     html+=`<button class="${i===paginaActual?"active":""}" onclick="paginaActual=${i};renderRegistros()">${i}</button>`;
   }
-  if(totalPag>7) html+=`<button disabled>…</button><button onclick="paginaActual=${totalPag};renderRegistros()">${totalPag}</button>`;
+  if(fin < totalPag){ if(fin<totalPag-1) html+=`<button disabled>…</button>`; html+=`<button onclick="paginaActual=${totalPag};renderRegistros()">${totalPag}</button>`; }
   html+=`<button ${paginaActual>=totalPag?"disabled":""} onclick="paginaActual++;renderRegistros()">›</button>`;
   wrap.innerHTML = html;
 }
@@ -1746,7 +1772,11 @@ function limpiarFiltros(){
 }
 
 function poblarFiltrosMes(){
-  const meses = [...new Set(registros.map(r=>{ const d=_tsToDate(r.fecha); return d.getFullYear()+"-"+(d.getMonth()+1).toString().padStart(2,"0"); }))].sort().reverse();
+  // Usar solo los registros visibles según el rol
+  const base = currentProfile?.rol === "admin"
+    ? registros
+    : registros.filter(r => r.trabajadorUid === currentUser?.uid);
+  const meses = [...new Set(base.map(r=>{ const d=_tsToDate(r.fecha); return d.getFullYear()+"-"+(d.getMonth()+1).toString().padStart(2,"0"); }))].sort().reverse();
   const sel = document.getElementById("f-mes"); if(!sel) return;
   const cur = sel.value;
   sel.innerHTML = `<option value="">📅 Todos los meses</option>` + meses.map(m=>`<option value="${m}" ${m===cur?"selected":""}>${_fmtMes(m)}</option>`).join("");
@@ -1973,15 +2003,24 @@ function renderRecargasList(){
 // ════════════════════════════════════════════════════════
 function renderAdminUsuarios(){
   const wrap=document.getElementById("admin-usuarios-list"); if(!wrap) return;
+  const esSoloAdmin = usuarios.filter(u=>u.rol==="admin").length <= 1;
   wrap.innerHTML = usuarios.map(u=>{
     const rolClr = u.rol==="admin"?"background:var(--yellow-bg);color:#f57f17":"background:var(--blue-bg);color:var(--blue)";
+    const esMiCuenta = u.id === currentUser?.uid;
+    const esUltimoAdmin = u.rol==="admin" && esSoloAdmin;
+    const btnBaja = !esMiCuenta && !esUltimoAdmin
+      ? `<button class="btn-user-action btn-user-baja" onclick="confirmarBajaUsuario('${u.id}','${_esc(u.nombre||u.email)}')" title="Dar de baja al usuario">🗑 Baja</button>`
+      : '';
     return `<div class="user-item">
       <div class="user-avatar" style="background:${u.color||"#e65c00"}">${(u.nombre||"?")[0].toUpperCase()}</div>
       <div class="user-info">
-        <div class="user-name">${_esc(u.nombre||"—")}</div>
+        <div class="user-name">${_esc(u.nombre||"—")} ${esMiCuenta?'<span style="font-size:10px;color:var(--text3);font-weight:400">(tú)</span>':''}</div>
         <div class="user-email">${_esc(u.email||"—")}</div>
       </div>
-      <span class="user-rol-badge" style="${rolClr}">${u.rol==="admin"?"👑 Admin":"👷 Trabajador"}</span>
+      <div class="user-actions" style="flex-shrink:0;display:flex;gap:6px;align-items:center">
+        <span class="user-rol-badge" style="${rolClr}">${u.rol==="admin"?"👑 Admin":"👷 Trabajador"}</span>
+        ${btnBaja}
+      </div>
     </div>`;
   }).join("");
 }
@@ -2908,6 +2947,31 @@ async function borrarVehiculo(){
   confirmarBorrarVehiculo(editandoVehiculo);
 }
 
+// ── Dar de baja un usuario (eliminar de Firestore) ──────────────────────────
+function confirmarBajaUsuario(uid, nombre){
+  _bajaUsuarioUid = uid;
+  const titulo = document.getElementById("modal-baja-titulo");
+  const body   = document.getElementById("modal-baja-body");
+  const btn    = document.getElementById("modal-baja-btn");
+  const errEl  = document.getElementById("modal-baja-error");
+  if(!titulo||!body||!btn||!errEl) return;
+  titulo.textContent = "🗑 Dar de baja usuario";
+  body.innerHTML = `¿Seguro que quieres dar de baja a <strong>${_esc(nombre)}</strong>?<br><br>
+    <span style="color:var(--red);font-size:12px">⚠️ Se eliminará su perfil de la base de datos. No se elimina su cuenta de autenticación, pero dejará de tener acceso a la aplicación.</span>`;
+  btn.textContent = "🗑 Dar de baja";
+  btn.style.background = "var(--red)";
+  btn.onclick = async ()=>{
+    errEl.style.display="none";
+    try{
+      await db.collection("usuarios").doc(_bajaUsuarioUid).delete();
+      cerrarModal("modal-baja-usuario");
+      toast("🗑 Usuario dado de baja correctamente","#c62828");
+    }catch(e){ errEl.textContent=_firebaseErr(e); errEl.style.display="block"; }
+  };
+  errEl.style.display="none";
+  document.getElementById("modal-baja-usuario").classList.add("open");
+}
+
 
 // ════════════════════════════════════════════════════════
 //  CONFIG DEPÓSITO
@@ -3363,10 +3427,12 @@ function poblarFiltroDeudas(){
   if(!sel) return;
   const valActual = sel.value;
   sel.innerHTML = '<option value="">👷 Todos los trabajadores</option>';
-  usuarios.filter(u=>u.rol!=="admin").forEach(u=>{
+  // Mostrar todos los usuarios que tengan al menos un repostaje
+  const uidsConRep = new Set(registros.map(r=>r.trabajadorUid).filter(Boolean));
+  usuarios.filter(u => uidsConRep.has(u.id)).forEach(u=>{
     const op = document.createElement("option");
     op.value = u.id;
-    op.textContent = u.nombre||u.email;
+    op.textContent = (u.nombre||u.email) + (u.rol==="admin"?" 👑":"");
     sel.appendChild(op);
   });
   sel.value = valActual;
@@ -3798,7 +3864,7 @@ function renderPrevisionAgotamiento(){
 
   const actual   = configDeposito.actual    || 0;
   const capacidad= configDeposito.capacidad || 2000;
-  const alerta   = ((configDeposito.alertaPct || 20) / 100) * capacidad;
+  const alerta   = ((configDeposito.alerta || 20) / 100) * capacidad;
 
   if(!actual || !capacidad){ wrap.innerHTML = ""; return; }
 
@@ -4346,7 +4412,7 @@ async function generarPDF(){
     else if(_pdfTipo === "deposito"){
       const actual    = configDeposito.actual    || 0;
       const capacidad = configDeposito.capacidad || 2000;
-      const alertaPct = configDeposito.alertaPct || 20;
+      const alertaPct = configDeposito.alerta || 20;
       const alerta    = (alertaPct/100)*capacidad;
       const pct       = Math.round((actual/capacidad)*100);
 
